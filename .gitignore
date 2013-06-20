@@ -1,0 +1,29 @@
+# Compiled source #
+###################
+*.beam
+*.o
+
+# Logs #
+######################
+*.log
+*.dump
+
+# OS generated files #
+######################
+.DS_Store
+._*
+*~
+
+# eclipse project files #
+#########################
+.project
+.settings/
+
+# lib files #
+#########################
+lib/*
+
+# doc and priv files #
+#########################
+doc/*
+priv/*
