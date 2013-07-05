@@ -2,11 +2,14 @@
 ###################
 *.beam
 *.o
+epax
+ebin/
 
 # Logs #
 ######################
 *.log
 *.dump
+erl_crash.dump
 
 # OS generated files #
 ######################
@@ -27,3 +30,4 @@ lib/*
 #########################
 doc/*
 priv/*
+.*
