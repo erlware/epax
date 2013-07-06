@@ -23,7 +23,8 @@
 		 app_exists/1,
 		 checkout_repo_and_add_to_index/1,
          remove_from_index/1,
-         get_applist/0]).
+         get_applist/0,
+         update_index/0]).
 
 
 %%============================================================================
@@ -108,6 +109,30 @@ get_applist() ->
     case file:consult(get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             lists:map(fun(App) -> element(1, App) end, Existing_apps);
+        {error, _} ->
+            {error, "please run init before running other epax commands!"}
+    end.
+
+%% update_index/0
+%% ====================================================================
+%% @doc updates details of apps in index
+-spec update_index() -> ok.
+%% ====================================================================
+update_index() ->
+    case file:consult(get_abs_path("index.cfg")) of
+        {ok, [Existing_apps]} ->
+            write_to_index_file(lists:reverse(lists:foldl(fun(App, Acc) ->
+                    case update_app(App) of
+                        {ok, Newapp} ->
+                            io:format("~p updated!~n", [element(1, App)]),
+                            [Newapp|Acc];
+                        {error, Reason} ->
+                            io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
+                            [App|Acc]
+                    end
+                end,
+                [],
+                Existing_apps)));
         {error, _} ->
             {error, "please run init before running other epax commands!"}
     end.
@@ -220,3 +245,13 @@ collect_branches(Path) ->
 
 run_in_dir(Path, Cmd) ->
     os:cmd(lists:concat(["cd ", Path, " && ", Cmd])).
+
+update_app(App) ->
+    Path = get_abs_path(lists:concat(["packages/", element(1, App)])),
+    run_in_dir(Path, "git pull"),
+    case filelib:is_dir(Path) of
+        true ->
+            get_app_info(element(2, App), Path);
+        false ->
+            {error, "unable to clone repo!"}
+    end.

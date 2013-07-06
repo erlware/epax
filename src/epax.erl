@@ -22,7 +22,8 @@
 -export([install/0,
          add_app/1,
          remove_app/1,
-         list_apps/0]).
+         list_apps/0,
+         update/0]).
 
 
 %%============================================================================
@@ -68,4 +69,12 @@ remove_app(Appname) ->
 -spec list_apps() -> ok.
 %% ====================================================================
 list_apps() ->
-    lists:foreach(fun(Elem) -> io:format("\t~p~n", [Elem]) end, epax_index:get_applist()).
+    lists:foreach(fun(Elem) -> io:format("~p~n", [Elem]) end, epax_index:get_applist()).
+
+%% update/0
+%% ====================================================================
+%% @doc updates the index
+-spec update() -> ok.
+%% ====================================================================
+update() ->
+    epax_index:update_index().
