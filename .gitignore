@@ -24,7 +24,7 @@ erl_crash.dump
 
 # lib files #
 #########################
-lib/*
+deps/*
 
 # doc and priv files #
 #########################
