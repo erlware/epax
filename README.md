@@ -1,6 +1,8 @@
 epax
 ====
 
+[![Build Status](https://travis-ci.org/mangalaman93/epax.png?branch=feature_basic_git)](https://travis-ci.org/mangalaman93/epax)
+
 Structure of index file
 -----------------------
 
