@@ -37,7 +37,6 @@
 -spec init() -> ok.
 %% ====================================================================
 init() ->
-    os:cmd(lists:concat(["mkdir -p ", get_abs_path("")])),           % creating .epax directory if not exists
     os:cmd(lists:concat(["touch ", get_abs_path("index.cfg")])),     % creating index.cfg file
     write_to_index_file([]),                                         % writing empty list to index.cfg
     os:cmd(lists:concat(["mkdir -p ", get_abs_path("packages")])),   % creating packages directory if not exists
@@ -76,7 +75,8 @@ checkout_repo_and_add_to_index(Link) ->
         {ok, [Existing_apps]} ->
             case clone_app(Link) of
                 {ok, Newapp} ->
-                    write_to_index_file([Newapp|Existing_apps]);
+                    write_to_index_file([Newapp|Existing_apps]),
+                    {ok, element(1, Newapp)};
                 {error, Reason} ->
                     {error, Reason}
             end;
@@ -142,8 +142,7 @@ update_index() ->
 %%% Internal Functions
 %%%===================================================================
 get_abs_path(Location) ->
-    {ok, [[Home]]} = init:get_argument(home),               % getting the home directory location
-    lists:concat([Home, '/.epax/', Location]).              % getting absolute path to index.cfg
+    epax_com:get_abs_path(Location).
 
 write_to_index_file(Data) ->
     file:write_file(get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
@@ -181,11 +180,8 @@ get_app_info(Link, Path) ->
     end.
 
 find_publisher(Path) ->
-    Src_folder = lists:concat([Path, "/src"]),
-    {ok, Files} = file:list_dir(Src_folder),
-    case get_appfile_name(Files) of
-        {ok, File} ->
-            App_file_loc = lists:concat([Src_folder, "/", File]),
+    case epax_com:get_appfile_loc(Path) of
+        {ok, App_file_loc} ->
             {ok, [Info]} = file:consult(App_file_loc),
             Appname = element(2, Info),
             Description = find_key(description, element(3, Info)),
@@ -203,17 +199,6 @@ find_key(Key, List) ->
             ""
     end.
 
-get_appfile_name([]) ->
-    {error, "app.src file does not exist"};
-get_appfile_name([File|Rest]) ->
-    case re:run(File, ".*\.app\.src", [caseless]) of
-        {match, _} ->
-            {ok, File};
-        _ ->
-            get_appfile_name(Rest)
-    end.
-
-
 collect_tags(Path) ->
     List_tags = run_in_dir(Path, "git tag"),
     lists:foldl(fun(T, Acc) ->
@@ -229,15 +214,15 @@ collect_tags(Path) ->
 
 collect_branches(Path) ->
     Ret = run_in_dir(Path, "git branch --remote"),
-    [_|List_branches] = re:split(Ret, "\n"),
+    List_branches = re:split(Ret, "\n"),
     lists:foldl(fun(Branch, Acc) ->
             Full_branch = binary_to_list(Branch),
-            case Full_branch of
-                "" ->
-                    Acc;
+            case erlang:length(re:split(Full_branch, "origin/")) of
+                2 ->
+                    {match, [{Loc, Len}]} = re:run(Full_branch, "origin/"),
+                    [lists:nthtail(Loc+Len, Full_branch)|Acc];
                 _ ->
-                    {match,[{Loc, Len}]} = re:run(Full_branch, "origin/"),
-                    [lists:nthtail(Loc+Len, Full_branch)|Acc]
+                    Acc
             end
         end,
         [],

@@ -19,62 +19,24 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc main epax module
 -module(epax).
--export([install/0,
-         add_app/1,
-         remove_app/1,
-         list_apps/0,
-         update/0]).
+-export([main/1]).
 
 
 %%============================================================================
 %% API
 %%============================================================================
 
-%% install/0
+%% main/1
 %% ====================================================================
-%% @doc installs epax, initialize index
--spec install() -> ok.
-%% ====================================================================
- install() ->
-    epax_index:init().
-
-%% add_app/1
-%% ====================================================================
-%% @doc add OTP application stored at Link (only supports git)
--spec add_app(Link) -> ok when
-    Link :: string().
-%% ====================================================================
-add_app(Link) ->
-    case epax_index:app_exists(Link) of
-        {ok, true} ->
-            io:format("~p~n", ["Error: app is already added!"]);
-        {ok, false} ->
-            epax_index:checkout_repo_and_add_to_index(Link);
-        {error, Reason} ->
-            io:format("Error: ~p~n", [Reason])
-    end.
-
-%% remove_app/1
-%% ====================================================================
-%% @doc removes OTP application from index
--spec remove_app(Appname) -> ok when
-    Appname :: atom().
-%% ====================================================================
-remove_app(Appname) ->
-    epax_index:remove_from_index(Appname).
-
-%% list_apps/0
-%% ====================================================================
-%% @doc prints the app list stored in the index
--spec list_apps() -> ok.
-%% ====================================================================
-list_apps() ->
-    lists:foreach(fun(Elem) -> io:format("~p~n", [Elem]) end, epax_index:get_applist()).
-
-%% update/0
-%% ====================================================================
-%% @doc updates the index
--spec update() -> ok.
-%% ====================================================================
-update() ->
-    epax_index:update_index().
+main(["install"]) ->
+    epax_app:install();
+main(["add"|[Link]]) ->
+    epax_app:add_app(Link);
+main(["list"]) ->
+    epax_app:list_apps();
+main(["remove"|[Appname]]) ->
+    epax_app:remove_app(list_to_atom(Appname));
+main(["update"]) ->
+    epax_app:update();
+main(Args) ->
+    io:format("invalid subcommand: ~p~n", [Args]).
