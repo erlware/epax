@@ -46,21 +46,23 @@ init() ->
 %% app_exists/1
 %% ====================================================================
 %% @doc returns true when the app is already added into the index,
-%% false otherwise
--spec app_exists(Link) -> Result when
-    Link :: string(),
+%% false otherwise. Info can be either the link to the application or
+%% the name of the application
+-spec app_exists(Info) -> Result when
+    Info   :: string()
+            | atom(),
     Result  :: {ok, Status}
              | {error, Reason},
     Status  :: true
              | false,
     Reason  :: string().
 %% ====================================================================
-app_exists(Link) ->
+app_exists(Info) ->
     case file:consult(get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            {ok, app_exists(Link, Existing_apps)};
+            {ok, app_exists(Info, Existing_apps)};
         _ ->
-            {error, "please run init before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands!"}
     end.
 
 %% checkout_repo_and_add_to_index/1
@@ -81,7 +83,7 @@ checkout_repo_and_add_to_index(Link) ->
                     {error, Reason}
             end;
         _ ->
-            {error, "please run init before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands!"}
     end.
 
 %% remove_from_index/1
@@ -97,7 +99,7 @@ remove_from_index(Appname) ->
             run_in_dir(get_abs_path("packages"), lists:concat(["rm -rf ", atom_to_list(Appname)])),
             ok;
         {error, _} ->
-            {error, "please run init before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands!"}
     end.
 
 %% get_applist/0
@@ -110,7 +112,7 @@ get_applist() ->
         {ok, [Existing_apps]} ->
             lists:map(fun(App) -> element(1, App) end, Existing_apps);
         {error, _} ->
-            {error, "please run init before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands!"}
     end.
 
 %% update_index/0
@@ -134,7 +136,7 @@ update_index() ->
                 [],
                 Existing_apps)));
         {error, _} ->
-            {error, "please run init before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands!"}
     end.
 
 
@@ -147,12 +149,12 @@ get_abs_path(Location) ->
 write_to_index_file(Data) ->
     file:write_file(get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
 
-app_exists(_Link, []) ->
-    false;
-app_exists(Link, [H|_]) when element(2, H) == Link ->
-    true;
-app_exists(Link, [_|Rest]) ->
-    app_exists(Link, Rest).
+app_exists(Info, Existing_apps) when is_list(Info) ->
+    lists:keymember(Info, 2, Existing_apps);
+app_exists(Info, Existing_apps) when is_atom(Info) ->
+    lists:keymember(Info, 1, Existing_apps);
+app_exists(_, _) ->
+    false.
 
 clone_app(Link) ->
     Path = get_abs_path("packages/temp"),

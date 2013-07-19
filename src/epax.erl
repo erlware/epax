@@ -38,5 +38,7 @@ main(["remove"|[Appname]]) ->
     epax_app:remove_app(list_to_atom(Appname));
 main(["update"]) ->
     epax_app:update();
+main(["bundle"|[Appname]]) ->
+    epax_app:bundle(list_to_atom(Appname));
 main(Args) ->
     io:format("invalid subcommand: ~p~n", [Args]).

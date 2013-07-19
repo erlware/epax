@@ -23,7 +23,8 @@
          add_app/1,
          remove_app/1,
          list_apps/0,
-         update/0]).
+         update/0,
+         bundle/1]).
 
 
 %%============================================================================
@@ -54,10 +55,10 @@ add_app(Link) ->
                 {ok, Appname} ->
                     io:format("successfully added ~p to index!~n", [Appname]);
                 {error, Reason} ->
-                    io:format("Error! cannot add into index because ~p~n", [Reason])
+                    io:format("Error! cannot add into index because ~s~n", [Reason])
             end;
         {error, Reason} ->
-            io:format("Error: ~p~n", [Reason])
+            io:format("Error: ~s~n", [Reason])
     end.
 
 %% remove_app/1
@@ -69,7 +70,7 @@ add_app(Link) ->
 remove_app(Appname) ->
     case epax_index:remove_from_index(Appname) of
         {error, Reason} ->
-            io:format("Error! ~p~n", [Reason]);
+            io:format("Error! ~s~n", [Reason]);
         _ ->
             io:format("Application ~p removed successfully!~n", [Appname])
     end.
@@ -81,8 +82,10 @@ remove_app(Appname) ->
 %% ====================================================================
 list_apps() ->
     case epax_index:get_applist() of
+        {error, Reason} ->
+            io:format("Error! ~s~n", [Reason]);
         [] ->
-            io:format("no app added yet!");
+            io:format("no app added yet!~n");
         All_apps ->
             lists:foreach(fun(Elem) -> io:format("~p~n", [Elem]) end, All_apps)
     end.
@@ -95,7 +98,24 @@ list_apps() ->
 update() ->
     case epax_index:update_index() of
         {error, Reason} ->
-            io:format("Error! ~p~n", [Reason]);
+            io:format("Error! ~s~n", [Reason]);
         _ ->
             io:format("Index updated successfully!~n")
+    end.
+
+%% bundle/0
+%% ====================================================================
+%% @doc bundles the app, finds all the dependencies and copies them into the
+%% app folder
+-spec bundle(Appname) -> ok when
+    Appname :: atom().
+%% ====================================================================
+bundle(Appname) ->
+    case epax_dep:bundle(Appname) of
+        {error, Reason} ->
+            io:format("Error! "),
+            io:format(Reason),
+            io:format("~n");
+        _ ->
+            io:format("~p bundled successfully!~n", [Appname])
     end.
