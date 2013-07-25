@@ -17,5 +17,6 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
+
 -module(epax_index_tests).
 -include_lib("eunit/include/eunit.hrl").
