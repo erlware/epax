@@ -84,9 +84,9 @@ list_apps() ->
     case epax_index:get_applist() of
         {error, Reason} ->
             io:format("Error! ~s~n", [Reason]);
-        [] ->
+        {ok, []} ->
             io:format("no app added yet!~n");
-        All_apps ->
+        {ok, All_apps} ->
             lists:foreach(fun(Elem) -> io:format("~p~n", [Elem]) end, All_apps)
     end.
 

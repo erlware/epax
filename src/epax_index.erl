@@ -69,8 +69,12 @@ app_exists(Info) ->
 %% ====================================================================
 %% @doc checks out the repo in the packages folder and adds details to
 %% index
--spec checkout_repo_and_add_to_index(Link) -> ok when
-    Link :: string().
+-spec checkout_repo_and_add_to_index(Link) -> Result when
+    Link     :: string(),
+    Result   :: {ok, Newapp}
+              | {error, Reason},
+    Newapp   :: atom(),
+    Reason   :: term().
 %% ====================================================================
 checkout_repo_and_add_to_index(Link) ->
     case file:consult(get_abs_path("index.cfg")) of
@@ -105,12 +109,17 @@ remove_from_index(Appname) ->
 %% get_applist/0
 %% ====================================================================
 %% @doc returns list of application added into the index
--spec get_applist() -> ok.
+-spec get_applist() -> Result when
+    Result   :: {ok, Allapps}
+              | {error, Reason},
+    Allapps :: [atom()],
+    Reason   :: term().
 %% ====================================================================
 get_applist() ->
     case file:consult(get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            lists:map(fun(App) -> element(1, App) end, Existing_apps);
+            Unsorted_apps = lists:map(fun(App) -> element(1, App) end, Existing_apps),
+            {ok, lists:sort(Unsorted_apps)};
         {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
     end.

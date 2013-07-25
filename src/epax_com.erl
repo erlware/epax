@@ -45,7 +45,10 @@ get_abs_path(Location) ->
 %% abosolute path to the file
 -spec get_appfile_loc(Path_to_app) -> Result when
     Path_to_app :: string(),
-    Result      :: string().
+    Result      :: {ok, Location}
+                 | {error, Reason},
+    Location    :: string(),
+    Reason      :: term().
 %% ====================================================================
 get_appfile_loc(Path_to_app) ->
     Ebin = lists:concat([Path_to_app, "/ebin"]),
