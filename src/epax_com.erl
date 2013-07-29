@@ -19,57 +19,85 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc common functions used in epax modules
 -module(epax_com).
--export([get_abs_path/1,
-         get_appfile_loc/1]).
+-export([print_error/1,
+         print_error/2,
+         print_success/1,
+         get_appfile_content/1]).
 
 
 %%============================================================================
 %% API
 %%============================================================================
 
-%% get_abs_path/1
+%% print_error/1
 %% ====================================================================
-%% @doc returns absolute path to the given location which is relative to
-%% .epax folder
--spec get_abs_path(Location) -> Result when
-    Location :: string(),
-    Result   :: string().
+%% @doc prints error on terminal
+-spec print_error(Message) -> ok when
+    Message :: string().
 %% ====================================================================
-get_abs_path(Location) ->
-    {ok, [[Home]]} = init:get_argument(home),               % getting the home directory location
-    lists:concat([Home, '/.epax/', Location]).              % getting absolute path to index.cfg
+print_error(Message) ->
+    io:format("Error! ~s~n", [Message]).
 
-%% get_appfile_loc/1
+%% print_error/2
+%% ====================================================================
+%% @doc prints error on terminal
+-spec print_error(Reason, Conclusion) -> ok when
+    Reason     :: term(),
+    Conclusion :: list().
+%% ====================================================================
+print_error(Reason, Conclusion) ->
+    io:format("Error occurred! "),
+    io:format(Reason),
+    io:format("~n~s~n", [Conclusion]).
+
+%% print_success/1
+%% ====================================================================
+%% @doc prints successful completion message on terminal
+-spec print_success(Message) -> ok when
+    Message :: string().
+%% ====================================================================
+print_success(Message) ->
+    io:format("Success~n~s~n", [Message]).
+
+%% get_appfile_content/1
 %% ====================================================================
 %% @doc find the .app or .app.src file in the application and returns
 %% abosolute path to the file
--spec get_appfile_loc(Path_to_app) -> Result when
-    Path_to_app :: string(),
-    Result      :: {ok, Location}
-                 | {error, Reason},
-    Location    :: string(),
-    Reason      :: term().
+-spec get_appfile_content(Appname) -> Result when
+    Appname :: atom(),
+    Result  :: {ok, Content}
+             | {error, Reason},
+    Content :: string(),
+    Reason  :: term().
 %% ====================================================================
-get_appfile_loc(Path_to_app) ->
-    Ebin = lists:concat([Path_to_app, "/ebin"]),
-    case find_file_in_folder(".*\.app", Ebin) of
+get_appfile_content(Info) ->
+    Base_folder = case is_atom(Info) of
+        true ->
+            lists:concat(["packages/", atom_to_list(Info)]);
+        false ->
+            Info
+    end,
+    case find_file_in_folder(".*\.app$", lists:concat([Base_folder, "/ebin"])) of
         {ok, Location} ->
-            {ok, Location};
+            file:consult(Location);
         {error, _} ->
-            Src = lists:concat([Path_to_app, "/src"]),
-            find_file_in_folder(".*\.app\.src", Src)
+            case find_file_in_folder(".*\.app\.src$", lists:concat([Base_folder, "/src"])) of
+                {ok, Location} ->
+                    file:consult(Location);
+                {error, Reason} ->
+                    {error, Reason}
+            end
     end.
-
 
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
 find_file_in_folder(RE, Folder) ->
-    case file:list_dir(Folder) of
+    case file:list_dir(epax_os:get_abs_path(Folder)) of
         {ok, Files} ->
             case get_appfile_name(Files, RE) of
                 {ok, File} ->
-                    {ok, lists:concat([Folder, "/", File])};
+                    {ok, epax_os:get_abs_path(lists:concat([Folder, "/", File]))};
                 {error, Reason} ->
                     {error, Reason}
             end;

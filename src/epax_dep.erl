@@ -30,8 +30,11 @@
 %% ====================================================================
 %% @doc bundles the app, finds all the dependencies and copies them into the
 %% app folder
--spec bundle(Appname) -> ok when
-    Appname :: atom().
+-spec bundle(Appname) -> Result when
+    Appname :: atom(),
+    Result  ::  ok
+             | {error, Reason},
+    Reason  :: term().
 %% ====================================================================
 bundle(Appname) ->
     case find_all_deps_recursively_for(Appname) of
@@ -70,7 +73,7 @@ find_all_deps_recursively_helper([H|T], Already_added) ->
 
 find_all_deps_for(Appname) ->
     case epax_index:app_exists(Appname) of
-        {ok, true} ->
+        {ok, Appname} ->
             find_all_deps_for_helper(Appname);
         {ok, false} ->
             {error, lists:concat([atom_to_list(Appname), " is not found!"])};
@@ -79,10 +82,8 @@ find_all_deps_for(Appname) ->
     end.
 
 find_all_deps_for_helper(Appname) ->
-    App_loc = epax_com:get_abs_path(lists:concat(["packages/", atom_to_list(Appname)])),
-    case epax_com:get_appfile_loc(App_loc) of
-        {ok, Appfile} ->
-            {ok, [App_content]} = file:consult(Appfile),
+    case epax_com:get_appfile_content(Appname) of
+        {ok, App_content} ->
             App_details = element(3, App_content),
             Include_app = case lists:keyfind(included_applications, 1, App_details) of
                 false ->
@@ -112,15 +113,13 @@ delete_standard_apps(Deps) ->
     Deps).
 
 copy_all_deps(Deps, Appname) ->
-    To_deps_folder = epax_com:get_abs_path(lists:concat(["packages/", Appname, "/deps/"])),
+    To_deps_folder = epax_os:get_abs_path(lists:concat(["packages/", Appname, "/deps"])),
     lists:foreach(fun(Dep) ->
         copy_dep(Dep, To_deps_folder)
     end,
     Deps).
 
 copy_dep(Dep, To_deps_folder) ->
-    From = epax_com:get_abs_path(lists:concat(["packages/", Dep])),
-    To_folder = lists:concat([To_deps_folder, Dep]),
-    io:format("copying ~p to ~p~n", [From, To_folder]),
-    os:cmd(lists:concat(["mkdir -p ", To_deps_folder])),
-    os:cmd(lists:concat(["cp -ir ", From, " ", To_folder])).
+    From = epax_os:get_abs_path(lists:concat(["packages/", Dep])),
+    io:format("copying ~p~n", [Dep]),
+    epax_os:copy_folder(From, To_deps_folder).
