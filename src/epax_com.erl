@@ -77,11 +77,11 @@ get_appfile_content(Info) ->
         false ->
             Info
     end,
-    case find_file_in_folder(".*\.app$", lists:concat([Base_folder, "/ebin"])) of
+    case find_file_in_folder(".*\\.app$", lists:concat([Base_folder, "/ebin"])) of
         {ok, Location} ->
             file:consult(Location);
         {error, _} ->
-            case find_file_in_folder(".*\.app\.src$", lists:concat([Base_folder, "/src"])) of
+            case find_file_in_folder(".*\\.app\\.src$", lists:concat([Base_folder, "/src"])) of
                 {ok, Location} ->
                     file:consult(Location);
                 {error, Reason} ->

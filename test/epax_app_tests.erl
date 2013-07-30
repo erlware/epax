@@ -27,7 +27,7 @@ install_test_() ->
     [{"test installation of epax",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
-        meck:expect(epax_os, mkdir, fun("loc") -> ok end),
+        meck:expect(epax_os, mkdir, fun("loc") -> {ok, done} end),
         meck:expect(epax_index, init, fun() -> ok end),
         ?assertEqual(ok, epax_app:install()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, [""])),
