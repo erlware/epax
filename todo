@@ -9,5 +9,5 @@ autocomplete command
 doesn't work for same application different publisher
 agner
 
-write tests for epax_os, com, index
-move the git operation separately
+dialyzer warnings
+remove_index what if the app doesn't exist

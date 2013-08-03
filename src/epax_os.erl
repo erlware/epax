@@ -23,7 +23,8 @@
          mkdir/1,
          copy_folder/2,
          touch/1,
-         rmdir/1]).
+         rmdir/1,
+         run_in_dir/2]).
 
 
 %%============================================================================
@@ -48,7 +49,7 @@ get_abs_path(Location) ->
                     lists:concat(["/.epax/", Location])
             end);
         error ->
-            throw("cannot find the location to home folder")
+            throw("cannot find the path to home folder")
     end.
 
 %% mkdir/1
@@ -116,6 +117,21 @@ rmdir(Path) ->
         {win32, _} ->
             Cmd = lists:concat(["rmdir /s/q ", Path])
     end,
+    cmd(Cmd).
+
+%% run_in_dir/2
+%% ====================================================================
+%% @doc runs a command in a directory. This command should only be used
+%% to run external application like git.
+-spec run_in_dir(Path, Cmd) -> Result when
+    Path   :: list(),
+    Cmd    :: list(),
+    Result :: ok
+            | {error, Reason},
+    Reason :: term().
+%% ====================================================================
+run_in_dir(Path, Cmd) ->
+    Cmd = lists:concat(["cd ", Path, " && ", Cmd]),
     cmd(Cmd).
 
 %%%===================================================================

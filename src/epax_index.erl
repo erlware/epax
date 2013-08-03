@@ -62,7 +62,7 @@ app_exists(Info) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             {ok, app_exists(Info, Existing_apps)};
-        _ ->
+        {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
     end.
 
@@ -80,14 +80,14 @@ app_exists(Info) ->
 checkout_repo_and_add_to_index(Link) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            case clone_app(Link) of
+            case epax_repo:clone_app(Link) of
                 {ok, Newapp} ->
                     write_to_index_file([Newapp|Existing_apps]),
                     {ok, element(1, Newapp)};
                 {error, Reason} ->
                     {error, Reason}
             end;
-        _ ->
+        {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
     end.
 
@@ -104,7 +104,8 @@ remove_from_index(Appname) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             write_to_index_file(lists:keydelete(Appname, 1, Existing_apps)),
-            run_in_dir(epax_os:get_abs_path("packages"), lists:concat(["rm -rf ", atom_to_list(Appname)])),
+            Path = lists:concat(["packages/", atom_to_list(Appname)]),
+            epax_os:rmdir(epax_os:get_abs_path(Path)),
             ok;
         {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
@@ -138,17 +139,17 @@ update_index() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             write_to_index_file(lists:reverse(lists:foldl(fun(App, Acc) ->
-                    case update_app(App) of
-                        {ok, Newapp} ->
-                            io:format("~p updated!~n", [element(1, App)]),
-                            [Newapp|Acc];
-                        {error, Reason} ->
-                            io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
-                            [App|Acc]
-                    end
-                end,
-                [],
-                Existing_apps)));
+                case update_app(App) of
+                    {ok, Newapp} ->
+                        io:format("~p updated!~n", [element(1, App)]),
+                        [Newapp|Acc];
+                    {error, Reason} ->
+                        io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
+                        [App|Acc]
+                end
+            end,
+            [],
+            Existing_apps)));
         {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
     end.
@@ -161,14 +162,14 @@ write_to_index_file(Data) ->
     file:write_file(epax_os:get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
 
 app_exists(Info, Existing_apps) when is_list(Info) ->
-    case lists:keymember(Info, 2, Existing_apps) of
+    case lists:keyfind(Info, 2, Existing_apps) of
         false ->
             false;
         {Appname, Info, _} ->
             Appname
     end;
 app_exists(Info, Existing_apps) when is_atom(Info) ->
-    case lists:keymember(Info, 1, Existing_apps) of
+    case lists:keyfind(Info, 1, Existing_apps) of
         false ->
             false;
         {Info, _, _} ->
@@ -177,90 +178,12 @@ app_exists(Info, Existing_apps) when is_atom(Info) ->
 app_exists(_, _) ->
     false.
 
-clone_app(Link) ->
-    Path = epax_os:get_abs_path("packages/temp"),
-    os:cmd(lists:concat(["git clone ", Link, " ", Path])),
-    case filelib:is_dir(Path) of
-        true ->
-            get_app_info(Link, "packages/temp");
-        false ->
-            {error, "unable to clone repo!"}
-    end.
-
-get_app_info(Link, Path) ->
-    Abs_path = epax_os:get_abs_path(Path),
-    case find_publisher(Path) of
-        {ok, {Appname, Description, Author}} ->
-            Tags = collect_tags(Abs_path),
-            Branches = collect_branches(Abs_path),
-            os:cmd(lists:concat(["mv ", Abs_path, " ", epax_os:get_abs_path("packages/"), Appname])),
-            {ok, {Appname, Link, [{description, Description},
-                                  {publisher, Author},
-                                  {tags, Tags},
-                                  {branches, Branches}]}};
-        {error, Reason} ->
-            os:cmd(lists:concat(["rm -rf ", Abs_path])),
-            {error, Reason}
-    end.
-
-find_publisher(Path) ->
-    case epax_com:get_appfile_content(Path) of
-        {ok, Info} ->
-            Appname = element(2, Info),
-            Description = find_key(description, element(3, Info)),
-            Author = find_key(author, element(3, Info)),
-            {ok, {Appname, Description, Author}};
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
-find_key(Key, List) ->
-    io:format("Format"),
-    case lists:keyfind(Key, 1, List) of
-        {Key, Value} ->
-            Value;
-        false ->
-            ""
-    end.
-
-collect_tags(Path) ->
-    List_tags = run_in_dir(Path, "git tag"),
-    lists:foldl(fun(T, Acc) ->
-            case Tag = binary_to_list(T) of
-                [] ->
-                    Acc;
-                _ ->
-                    [Tag|Acc]
-            end
-        end,
-        [],
-        re:split(List_tags, "\n")).
-
-collect_branches(Path) ->
-    Ret = run_in_dir(Path, "git branch --remote"),
-    List_branches = re:split(Ret, "\n"),
-    lists:foldl(fun(Branch, Acc) ->
-            Full_branch = binary_to_list(Branch),
-            case erlang:length(re:split(Full_branch, "origin/")) of
-                2 ->
-                    {match, [{Loc, Len}]} = re:run(Full_branch, "origin/"),
-                    [lists:nthtail(Loc+Len, Full_branch)|Acc];
-                _ ->
-                    Acc
-            end
-        end,
-        [],
-        List_branches).
-
-run_in_dir(Path, Cmd) ->
-    os:cmd(lists:concat(["cd ", Path, " && ", Cmd])).
-
 update_app(App) ->
     Path = epax_os:get_abs_path(lists:concat(["packages/", element(1, App)])),
-    run_in_dir(Path, "git pull"),
+    epax_os:run_in_dir(Path, "git pull"),
     case filelib:is_dir(Path) of
         true ->
-            get_app_info(element(2, App), Path);
+            epax_repo:get_app_info(element(2, App), Path);
         false ->
             {error, "unable to clone repo!"}
     end.
