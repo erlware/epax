@@ -138,18 +138,19 @@ get_applist() ->
 update_index() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            write_to_index_file(lists:reverse(lists:foldl(fun(App, Acc) ->
-                case update_app(App) of
-                    {ok, Newapp} ->
-                        io:format("~p updated!~n", [element(1, App)]),
-                        [Newapp|Acc];
-                    {error, Reason} ->
-                        io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
-                        [App|Acc]
-                end
-            end,
-            [],
-            Existing_apps)));
+            write_to_index_file(lists:reverse(
+                lists:foldl(fun(App, Acc) ->
+                    case epax_repo:update_repo(App) of
+                        {ok, Newapp} ->
+                            io:format("~p updated!~n", [element(1, App)]),
+                            [Newapp|Acc];
+                        {error, Reason} ->
+                            io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
+                            [App|Acc]
+                    end
+                end,
+                [],
+                Existing_apps)));
         {error, _} ->
             {error, "please run `epax install` before running other epax commands!"}
     end.
@@ -177,13 +178,3 @@ app_exists(Info, Existing_apps) when is_atom(Info) ->
     end;
 app_exists(_, _) ->
     false.
-
-update_app(App) ->
-    Path = epax_os:get_abs_path(lists:concat(["packages/", element(1, App)])),
-    epax_os:run_in_dir(Path, "git pull"),
-    case filelib:is_dir(Path) of
-        true ->
-            epax_repo:get_app_info(element(2, App), Path);
-        false ->
-            {error, "unable to clone repo!"}
-    end.

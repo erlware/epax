@@ -241,3 +241,69 @@ get_applist_test_() ->
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
     end}]}.
 
+update_index_test_() ->
+    {foreach,
+    fun() -> meck:new([epax_os, epax_repo, file], [unstick, passthrough]) end,
+    fun(_) -> meck:unload([epax_os, epax_repo, file]) end,
+    [{"test for update_index when index cannot be read",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
+
+        ?assertEqual({error, "please run `epax install` before running other epax commands!"},
+                     epax_index:update_index()),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
+    end},
+    {"test for update_index",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
+                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, write_file, fun("index.cfg", [[91,
+                                                         [[123,["app1",44,"\"link1\"",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
+                                                          44,
+                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                         93],
+                                                        46,10]) -> ok end),
+        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
+                                                    {ok, {app1, "link1", [{detail1, "detail1"}]}};
+                                               ({app2, "link2", []}) ->
+                                                    {ok, {app2, "link2", [{detail2, "detail2"}]}} end),
+
+        ?assertEqual(ok ,epax_index:update_index()),
+        ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
+                                                                         [[123,["app1",44,"\"link1\"",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
+                                                                          44,
+                                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                                         93],
+                                                                        46,10]]))
+    end},
+    {"test for update_index when app1 cannot be updated",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
+                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, write_file, fun("index.cfg", [[91,
+                                                         [[123,["app1",44,"\"link1\"",44,"[]"],125],
+                                                          44,
+                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                         93],
+                                                        46,10]) -> ok end),
+        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
+                                                    {error, "error"};
+                                               ({app2, "link2", []}) ->
+                                                    {ok, {app2, "link2", [{detail2, "detail2"}]}} end),
+
+        ?assertEqual(ok ,epax_index:update_index()),
+        ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
+                                                                         [[123,["app1",44,"\"link1\"",44,"[]"],125],
+                                                                          44,
+                                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                                         93],
+                                                                        46,10]]))
+    end}]}.

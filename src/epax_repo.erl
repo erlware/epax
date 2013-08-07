@@ -17,9 +17,11 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
-%%% @doc main epax os module, runs os specific operations
+%%% @doc main epax repo module, takes care of interaction with
+%%% external repository
 -module(epax_repo).
--export([clone_app/1]).
+-export([clone_app/1,
+         update_repo/1]).
 
 
 %%============================================================================
@@ -103,3 +105,14 @@ collect_branches(Path) ->
         end,
         [],
         List_branches).
+
+
+    update_repo(App) ->
+        Path = epax_os:get_abs_path(lists:concat(["packages/", element(1, App)])),
+        epax_os:run_in_dir(Path, "git pull"),
+        case filelib:is_dir(Path) of
+            true ->
+                epax_repo:get_app_info(element(2, App), Path);
+            false ->
+                {error, "unable to clone repo!"}
+        end.
