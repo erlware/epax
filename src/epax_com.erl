@@ -63,11 +63,12 @@ print_success(Message) ->
 %% ====================================================================
 %% @doc find the .app or .app.src file in the application and returns
 %% abosolute path to the file
--spec get_appfile_content(Appname) -> Result when
-    Appname :: atom(),
-    Result  :: {ok, Content}
+-spec get_appfile_content(Info) -> Result when
+    Info    :: atom()
+             | string(),
+    Result  :: {ok, [Content]}
              | {error, Reason},
-    Content :: string(),
+    Content :: term(),
     Reason  :: term().
 %% ====================================================================
 get_appfile_content(Info) ->

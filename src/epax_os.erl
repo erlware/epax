@@ -22,6 +22,7 @@
 -export([get_abs_path/1,
          mkdir/1,
          copy_folder/2,
+         mv_folder/2,
          touch/1,
          rmdir/1,
          run_in_dir/2]).
@@ -40,26 +41,33 @@
     Result   :: string().
 %% ====================================================================
 get_abs_path(Location) ->
-    case init:get_argument(home) of
-        {ok, [[Home]]} ->
+    Home = case init:get_argument(home) of
+        {ok, [[Path]]} ->
+            Path;
+        error ->
+            throw("cannot find the path to home folder")
+    end,
+    case string:str(Location, Home) of
+        0 ->
             append_loc(Home, case Location of
                 "" ->
                     "/.epax";
                 _ ->
                     lists:concat(["/.epax/", Location])
             end);
-        error ->
-            throw("cannot find the path to home folder")
+        _ ->
+            Location
     end.
 
 %% mkdir/1
 %% ====================================================================
-%% @doc make the directory if it does not already exist. Also makes parent
+%% @doc make the directory if it does not exist already. Also makes parent
 %% directories as needed.
 -spec mkdir(Path) -> Result when
-    Path   :: list(),
-    Result :: ok
+    Path   :: string(),
+    Result :: {ok, Data}
             | {error, Reason},
+    Data   :: string(),
     Reason :: term().
 %% ====================================================================
 mkdir(Path) ->
@@ -73,11 +81,15 @@ mkdir(Path) ->
 
 %% copy_folder/2
 %% ====================================================================
-%% @doc copies the content of one folder to another, creates the intermediate
+%% @doc copies one folder to another, creates the intermediate
 %% directories if required
--spec copy_folder(From, To) -> ok when
-    From :: list(),
-    To   :: list().
+-spec copy_folder(From, To) -> Result when
+    From   :: string(),
+    To     :: string(),
+    Result :: {ok, Data}
+            | {error, Reason},
+    Data   :: string(),
+    Reason :: term().
 %% ====================================================================
 copy_folder(From, To) ->
     mkdir(To),
@@ -89,11 +101,37 @@ copy_folder(From, To) ->
     end,
     cmd(Cmd).
 
+%% mv_folder/2
+%% ====================================================================
+%% @doc movies content of one folder to another, creates the intermediate
+%% directories if required
+-spec mv_folder(From, To) -> Result when
+    From   :: string(),
+    To     :: string(),
+    Result :: {ok, Data}
+            | {error, Reason},
+    Data   :: string(),
+    Reason :: term().
+%% ====================================================================
+mv_folder(From, To) ->
+    mkdir(To),
+    case os:type() of
+        {unix, _} ->
+            Cmd = lists:concat(["mv ", From, " ", To]);
+        {win32, _} ->
+            Cmd = lists:concat(["xcopy ", From, " ", To, " /s/e"])
+    end,
+    cmd(Cmd).
+
 %% touch/1
 %% ====================================================================
 %% @doc creates an empty file
--spec touch(Path) -> ok when
-    Path :: list().
+-spec touch(Path) -> Result when
+    Path   :: string(),
+    Result :: {ok, Data}
+            | {error, Reason},
+    Data   :: string(),
+    Reason :: term().
 %% ====================================================================
 touch(Path) ->
     case os:type() of
@@ -107,8 +145,12 @@ touch(Path) ->
 %% rmdir/1
 %% ====================================================================
 %% @doc deletes an empty file
--spec rmdir(Path) -> ok when
-    Path :: list().
+-spec rmdir(Path) -> Result when
+    Path   :: string(),
+    Result :: {ok, Data}
+            | {error, Reason},
+    Data :: string(),
+    Reason :: term().
 %% ====================================================================
 rmdir(Path) ->
     case os:type() of
@@ -124,15 +166,16 @@ rmdir(Path) ->
 %% @doc runs a command in a directory. This command should only be used
 %% to run external application like git.
 -spec run_in_dir(Path, Cmd) -> Result when
-    Path   :: list(),
-    Cmd    :: list(),
-    Result :: ok
+    Path   :: string(),
+    Cmd    :: string(),
+    Result :: {ok, Data}
             | {error, Reason},
+    Data   :: string(),
     Reason :: term().
 %% ====================================================================
 run_in_dir(Path, Cmd) ->
-    Cmd = lists:concat(["cd ", Path, " && ", Cmd]),
-    cmd(Cmd).
+    NewCmd = lists:concat(["cd ", Path, " && ", Cmd]),
+    os:cmd(NewCmd).
 
 %%%===================================================================
 %%% Internal Functions
