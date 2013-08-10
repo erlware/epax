@@ -10,6 +10,8 @@ ebin/
 *.log
 *.dump
 erl_crash.dump
+logs/*
+log/*
 
 # OS generated files #
 ######################

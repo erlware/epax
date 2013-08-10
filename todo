@@ -11,6 +11,7 @@ agner
 some kind of scan command which fixes broken packages
 handle all possible output of a command
 run_in_dir function
+erlando
 
 
 example commands
