@@ -103,8 +103,7 @@ copy_folder(From, To) ->
 
 %% mv_folder/2
 %% ====================================================================
-%% @doc movies content of one folder to another, creates the intermediate
-%% directories if required
+%% @doc moves content of one folder to another (renames the folder)
 -spec mv_folder(From, To) -> Result when
     From   :: string(),
     To     :: string(),
@@ -114,12 +113,11 @@ copy_folder(From, To) ->
     Reason :: term().
 %% ====================================================================
 mv_folder(From, To) ->
-    mkdir(To),
     case os:type() of
         {unix, _} ->
             Cmd = lists:concat(["mv ", From, " ", To]);
         {win32, _} ->
-            Cmd = lists:concat(["xcopy ", From, " ", To, " /s/e"])
+            Cmd = lists:concat(["move ", From, " ", To])
     end,
     cmd(Cmd).
 
@@ -168,10 +166,7 @@ rmdir(Path) ->
 -spec run_in_dir(Path, Cmd) -> Result when
     Path   :: string(),
     Cmd    :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data   :: string(),
-    Reason :: term().
+    Result :: term().
 %% ====================================================================
 run_in_dir(Path, Cmd) ->
     NewCmd = lists:concat(["cd ", Path, " && ", Cmd]),

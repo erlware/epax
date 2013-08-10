@@ -57,12 +57,12 @@ bundle_test_() ->
         
         % mocking the call to get_appfile_content function
         meck:expect(epax_com, get_appfile_content, fun
-            (a) -> {ok, A_appfile_content};
-            (b) -> {ok, B_appfile_content};
-            (c) -> {ok, C_appfile_content};
-            (d) -> {ok, D_appfile_content};
-            (e) -> {ok, E_appfile_content};
-            (f) -> {ok, F_appfile_content}
+            (a) -> {ok, [A_appfile_content]};
+            (b) -> {ok, [B_appfile_content]};
+            (c) -> {ok, [C_appfile_content]};
+            (d) -> {ok, [D_appfile_content]};
+            (e) -> {ok, [E_appfile_content]};
+            (f) -> {ok, [F_appfile_content]}
         end),
 
         ?assertEqual(ok, epax_dep:bundle(a)),
@@ -114,12 +114,12 @@ bundle_test_() ->
 
         % mocking the call to get_appfile_content function
         meck:expect(epax_com, get_appfile_content, fun
-            (a) -> {ok, A_appfile_content};
-            (b) -> {ok, B_appfile_content};
-            (c) -> {ok, C_appfile_content};
-            (d) -> {ok, D_appfile_content};
-            (e) -> {ok, E_appfile_content};
-            (f) -> {ok, F_appfile_content}
+            (a) -> {ok, [A_appfile_content]};
+            (b) -> {ok, [B_appfile_content]};
+            (c) -> {ok, [C_appfile_content]};
+            (d) -> {ok, [D_appfile_content]};
+            (e) -> {ok, [E_appfile_content]};
+            (f) -> {ok, [F_appfile_content]}
         end),
 
         ?assertEqual({error, "f is not found!"}, epax_dep:bundle(a)),
@@ -158,8 +158,8 @@ bundle_test_() ->
         
         % mocking the call to get_appfile_content function
         meck:expect(epax_com, get_appfile_content, fun
-            (a) -> {ok, A_appfile_content};
-            (b) -> {ok, B_appfile_content};
+            (a) -> {ok, [A_appfile_content]};
+            (b) -> {ok, [B_appfile_content]};
             (c) -> {ok, C_appfile_content}
         end),
 
@@ -207,12 +207,12 @@ bundle_test_() ->
         
         % mocking the call to get_appfile_content function
         meck:expect(epax_com, get_appfile_content, fun
-            (a) -> {ok, A_appfile_content};
-            (b) -> {ok, B_appfile_content};
-            (c) -> {ok, C_appfile_content};
-            (d) -> {ok, D_appfile_content};
+            (a) -> {ok, [A_appfile_content]};
+            (b) -> {ok, [B_appfile_content]};
+            (c) -> {ok, [C_appfile_content]};
+            (d) -> {ok, [D_appfile_content]};
             (e) -> {error, "error"};
-            (f) -> {ok, F_appfile_content}
+            (f) -> {ok, [F_appfile_content]}
         end),
 
         ?assertEqual({error, "error"}, epax_dep:bundle(a)),

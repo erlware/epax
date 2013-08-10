@@ -145,7 +145,7 @@ update_index() ->
                             io:format("~p updated!~n", [element(1, App)]),
                             [Newapp|Acc];
                         {error, Reason} ->
-                            io:format("~p unable to update, because ~p~n", [element(1, App), Reason]),
+                            io:format("~p: unable to update, because ~p~n", [element(1, App), Reason]),
                             [App|Acc]
                     end
                 end,

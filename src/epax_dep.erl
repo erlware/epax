@@ -83,7 +83,7 @@ find_all_deps_for(Appname) ->
 
 find_all_deps_for_helper(Appname) ->
     case epax_com:get_appfile_content(Appname) of
-        {ok, App_content} ->
+        {ok, [App_content]} ->
             App_details = element(3, App_content),
             Include_app = case lists:keyfind(included_applications, 1, App_details) of
                 false ->

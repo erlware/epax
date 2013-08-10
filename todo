@@ -8,6 +8,45 @@ what if the master branch is empty for the app [is it even possible?]
 autocomplete command
 doesn't work for same application different publisher
 agner
+some kind of scan command which fixes broken packages
+handle all possible output of a command
+run_in_dir function
 
-dialyzer warnings
-remove_index what if the app doesn't exist
+
+example commands
+########################
+./epax install
+./epax add https://github.com/erlware/relx.git
+./epax add https://github.com/erlware/episcina.git
+./epax add https://github.com/erlware/uri.git
+./epax add https://github.com/erlware/erlcron.git
+./epax add https://github.com/erlware/relcool.git
+./epax add https://github.com/erlware/erlmarkdown.git
+./epax add https://github.com/erlware/rebar_vsn_plugin.git
+./epax add https://github.com/erlware/rebar_relx_plugin.git
+./epax add https://github.com/erlware/dikdik.git
+./epax add https://github.com/erlware/erlware_commons.git
+./epax add https://github.com/basho/riak_kv.git
+./epax add https://github.com/boundary/folsom.git
+./epax add https://github.com/esl/jobs.git
+./epax add https://github.com/esl/gproc.git
+./epax add https://github.com/jcomellas/getopt.git
+./epax add https://github.com/basho/lager.git
+./epax add https://github.com/talentdeficit/jsx.git
+./epax add https://github.com/jcomellas/getopt.git
+./epax add https://github.com/basho/lager.git
+./epax add https://github.com/talentdeficit/jsx.git
+./epax add https://github.com/klarna/jesse.git
+./epax add https://github.com/noss/pgsql.git
+./epax add https://github.com/extend/goldrush.git
+./epax add https://github.com/richcarl/syntax_tools.git
+
+./epax list
+./epax remove folsom
+./epax update
+
+./epax bundle relx
+./epax bundle episcina
+./epax bundle erlcron
+./epax bundle folsom
+./epax bundle lager
