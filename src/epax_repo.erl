@@ -42,7 +42,7 @@
     Reason      :: term().
 %% ====================================================================
 clone_app(Link) ->
-    Path = epax_os:get_abs_path("packages/temp"),
+    Path = epax_os:get_abs_path(filename:join("packages", "temp")),
     case type_of_repo(Link) of
         {ok, Repo_type} ->
             download_repo(Repo_type, Link, Path),
@@ -50,7 +50,7 @@ clone_app(Link) ->
                 true ->
                     case get_app_info(Link, Path) of
                         {ok, {Appname, _, _}} = R ->
-                            To = lists:concat([epax_os:get_abs_path("packages/"), Appname]),
+                            To = filename:join(epax_os:get_abs_path("packages/"), Appname),
                             epax_os:mv_folder(Path, To),
                             R;
                         {error, _} = E ->
@@ -60,8 +60,8 @@ clone_app(Link) ->
                 false ->
                     {error, "unable to download repo!"}
             end;
-        {error, Reason} ->
-            {error, Reason}
+        {error, _} = E ->
+            E
     end.
 
 %% update_repo/1
@@ -79,7 +79,7 @@ clone_app(Link) ->
     Reason      :: term().
 %% ====================================================================
 update_repo(App) ->
-    Path = epax_os:get_abs_path(lists:concat(["packages/", element(1, App)])),
+    Path = epax_os:get_abs_path(filename:join("packages", element(1, App))),
     update_files(element(2, App), Path),
     get_app_info(element(2, App), Path).
 

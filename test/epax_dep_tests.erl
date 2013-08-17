@@ -122,7 +122,7 @@ bundle_test_() ->
             (f) -> {ok, [F_appfile_content]}
         end),
 
-        ?assertEqual({error, "f is not found!"}, epax_dep:bundle(a)),
+        ?assertEqual({error, "f is not found"}, epax_dep:bundle(a)),
 
         % asserting call is made for app_exists function for each app
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, [a])),

@@ -19,6 +19,7 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc provides an API to handle the index stored locally
 -module(epax_index).
+-include("epax.hrl").
 -export([init/0,
 		 app_exists/1,
 		 checkout_repo_and_add_to_index/1,
@@ -63,32 +64,38 @@ app_exists(Info) ->
         {ok, [Existing_apps]} ->
             {ok, app_exists(Info, Existing_apps)};
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands"}
     end.
 
 %% checkout_repo_and_add_to_index/1
 %% ====================================================================
-%% @doc checks out the repo in the packages folder and adds details to
+%% @doc downloads the repo in the packages folder and adds details to
 %% index
 -spec checkout_repo_and_add_to_index(Link) -> Result when
     Link    :: string(),
-    Result  :: {ok, Newapp}
+    Result  :: {ok, App}
              | {error, Reason},
-    Newapp  :: atom(),
+    App  :: atom(),
     Reason  :: term().
 %% ====================================================================
 checkout_repo_and_add_to_index(Link) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             case epax_repo:clone_app(Link) of
-                {ok, Newapp} ->
-                    write_to_index_file([Newapp|Existing_apps]),
-                    {ok, element(1, Newapp)};
-                {error, Reason} ->
-                    {error, Reason}
+                {ok, Newapp_details} ->
+                    case write_to_index_file([Newapp_details|Existing_apps]) of
+                        ok ->
+                            {ok, element(1, Newapp_details)};
+                        {error, _} = E ->
+                            Path = filename:join("packages", element(1, Newapp_details)),
+                            epax_os:rmdir(epax_os:get_abs_path(Path)),
+                            E
+                     end;
+                {error, _} = E ->
+                    E
             end;
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands"}
     end.
 
 %% remove_from_index/1
@@ -103,17 +110,16 @@ checkout_repo_and_add_to_index(Link) ->
 remove_from_index(Appname) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            write_to_index_file(lists:keydelete(Appname, 1, Existing_apps)),
-            Path = lists:concat(["packages/", atom_to_list(Appname)]),
+            Path = filename:join("packages", Appname),
             epax_os:rmdir(epax_os:get_abs_path(Path)),
-            ok;
+            write_to_index_file(lists:keydelete(Appname, 1, Existing_apps));
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands"}
     end.
 
 %% get_applist/0
 %% ====================================================================
-%% @doc returns list of application added into the index
+%% @doc returns the list of applications added into the index
 -spec get_applist() -> Result when
     Result   :: {ok, Allapps}
               | {error, Reason},
@@ -126,12 +132,12 @@ get_applist() ->
             Unsorted_apps = lists:map(fun(App) -> element(1, App) end, Existing_apps),
             {ok, lists:sort(Unsorted_apps)};
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands"}
     end.
 
 %% update_index/0
 %% ====================================================================
-%% @doc updates details of apps in index
+%% @doc pulls any changes in the repo and updates the details of apps in index
 -spec update_index() -> ok | {error, Reason} when
     Reason :: term().
 %% ====================================================================
@@ -142,17 +148,17 @@ update_index() ->
                 lists:foldl(fun(App, Acc) ->
                     case epax_repo:update_repo(App) of
                         {ok, Newapp} ->
-                            io:format("~p updated!~n", [element(1, App)]),
+                            ?CONSOLE(" => ~p updated!~n", [element(1, App)]),
                             [Newapp|Acc];
                         {error, Reason} ->
-                            io:format("~p: unable to update, because ~p~n", [element(1, App), Reason]),
+                            ?CONSOLE("  ** ~p: unable to update, because ~p~n", [element(1, App), Reason]),
                             [App|Acc]
                     end
                 end,
                 [],
                 Existing_apps)));
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands!"}
+            {error, "please run `epax install` before running other epax commands"}
     end.
 
 

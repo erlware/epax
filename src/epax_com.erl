@@ -36,7 +36,7 @@
     Message :: string().
 %% ====================================================================
 print_error(Message) ->
-    io:format("Error! ~s~n", [Message]).
+    io:format("** error occurred: ~s!~n", [Message]).
 
 %% print_error/2
 %% ====================================================================
@@ -46,9 +46,9 @@ print_error(Message) ->
     Conclusion :: list().
 %% ====================================================================
 print_error(Reason, Conclusion) ->
-    io:format("Error occurred! "),
+    io:format("** error occurred: "),
     io:format(Reason),
-    io:format("~n~s~n", [Conclusion]).
+    io:format("~n~s!~n", [Conclusion]).
 
 %% print_success/1
 %% ====================================================================
@@ -57,12 +57,12 @@ print_error(Reason, Conclusion) ->
     Message :: string().
 %% ====================================================================
 print_success(Message) ->
-    io:format("Success~n~s~n", [Message]).
+    io:format("=> success~n~s~n", [Message]).
 
 %% get_appfile_content/1
 %% ====================================================================
-%% @doc find the .app or .app.src file in the application and returns
-%% abosolute path to the file
+%% @doc finds the .app or .app.src file in the application folder and returns
+%% the content of the file
 -spec get_appfile_content(Info) -> Result when
     Info    :: atom()
              | string(),
@@ -74,44 +74,24 @@ print_success(Message) ->
 get_appfile_content(Info) ->
     Base_folder = case is_atom(Info) of
         true ->
-            lists:concat(["packages/", atom_to_list(Info)]);
+            filename:join(epax_os:get_abs_path("packages"), Info);
         false ->
             Info
     end,
-    case find_file_in_folder(".*\\.app$", lists:concat([Base_folder, "/ebin"])) of
-        {ok, Location} ->
-            file:consult(Location);
-        {error, _} ->
-            case find_file_in_folder(".*\\.app\\.src$", lists:concat([Base_folder, "/src"])) of
-                {ok, Location} ->
-                    file:consult(Location);
-                {error, Reason} ->
-                    {error, Reason}
-            end
-    end.
-
-%%%===================================================================
-%%% Internal Functions
-%%%===================================================================
-find_file_in_folder(RE, Folder) ->
-    case file:list_dir(epax_os:get_abs_path(Folder)) of
-        {ok, Files} ->
-            case get_appfile_name(Files, RE) of
-                {ok, File} ->
-                    {ok, epax_os:get_abs_path(lists:concat([Folder, "/", File]))};
-                {error, Reason} ->
-                    {error, Reason}
+    EbinDir = filename:join(Base_folder, "ebin"),
+    case filelib:wildcard("*.app", EbinDir) of
+        [File] ->
+            file:consult(filename:join(EbinDir, File));
+        [] ->
+            SrcDir = filename:join(Base_folder, "src"),
+            case filelib:wildcard("*.app.src", SrcDir) of
+                [File] ->
+                    file:consult(filename:join(SrcDir, File));
+                [] ->
+                    {error, "app or app.src file not found"};
+                _ ->
+                    {error, "more than one .app.src file in src folder"}
             end;
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
-get_appfile_name([], _RE) ->
-    {error, "app.src or .app file does not exist"};
-get_appfile_name([File|Rest], RE) ->
-    case re:run(File, RE, [caseless]) of
-        {match, _} ->
-            {ok, File};
         _ ->
-            get_appfile_name(Rest, RE)
+            {error, "more than one .app file in ebin folder"}
     end.

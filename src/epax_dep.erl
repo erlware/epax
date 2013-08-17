@@ -19,8 +19,9 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc handles dependency solving step for epax
 -module(epax_dep).
+-include("epax.hrl").
 -export([bundle/1]).
--define(STAND_APPS, [sasl, ssl, stdlib, kernel]).
+
 
 %%============================================================================
 %% API
@@ -48,6 +49,7 @@ bundle(Appname) ->
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
+
 find_all_deps_recursively_for(Appname) ->
     case find_all_deps_recursively_helper([Appname], []) of
         {ok, Deps} ->
@@ -76,7 +78,7 @@ find_all_deps_for(Appname) ->
         {ok, Appname} ->
             find_all_deps_for_helper(Appname);
         {ok, false} ->
-            {error, lists:concat([atom_to_list(Appname), " is not found!"])};
+            {error, ?FMT("~s is not found", [Appname])};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -113,13 +115,13 @@ delete_standard_apps(Deps) ->
     Deps).
 
 copy_all_deps(Deps, Appname) ->
-    To_deps_folder = epax_os:get_abs_path(lists:concat(["packages/", Appname, "/deps"])),
+    To_deps_folder = filename:join([epax_os:get_abs_path("packages"), Appname, "deps"]),
     lists:foreach(fun(Dep) ->
         copy_dep(Dep, To_deps_folder)
     end,
     Deps).
 
 copy_dep(Dep, To_deps_folder) ->
-    From = epax_os:get_abs_path(lists:concat(["packages/", Dep])),
-    io:format("copying ~p~n", [Dep]),
+    From = filename:join(epax_os:get_abs_path("packages"), Dep),
+    ?CONSOLE("copying ~p~n", [Dep]),
     epax_os:copy_folder(From, To_deps_folder).

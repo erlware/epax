@@ -41,4 +41,4 @@ main(["update"]) ->
 main(["bundle"|[Appname]]) ->
     epax_app:bundle(list_to_atom(Appname));
 main(Args) ->
-    io:format("invalid subcommand: ~p~n", [Args]).
+    io:format("** invalid subcommand: ~p~n", [string:join(Args, " ")]).

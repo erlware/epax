@@ -16,9 +16,22 @@
 %% @author Aman Mangal <mangalaman93@gmail.com>
 %% @copyright (C) 2012 Erlware, LLC.
 
-{application, epax,
- [{description, "Erlang Package Manager"},
-  {vsn, "0.0.0"},
-  {modules, []},
-  {registered, []},
-  {applications, [kernel, stdlib]}]}.
+% macro to fromat string
+-define(FMT(String, Args), lists:flatten(io_lib:format(String, Args))).
+
+% success macro
+-define(SUCCESS(Message), epax_com:print_success(Message)).
+-define(SUCCESS(Message, Args), epax_com:print_success(?FMT(Message, Args))).
+
+% error macro
+-define(ERROR(Reason, Conclusion, Args), epax_com:print_error(Reason, ?FMT(Conclusion, Args))).
+-define(ERROR(Reason, Conclusion), epax_com:print_error(Reason, Conclusion)).
+
+% console output
+-define(CONSOLE(Message, Args), io:format(Message, Args)).
+
+% abort the process
+-define(ABORT(Reason, Conclusion, Args), throw(Reason)).
+
+% other macros
+-define(STAND_APPS, [sasl, ssl, stdlib, kernel]).

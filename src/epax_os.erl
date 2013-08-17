@@ -19,6 +19,7 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc main epax os module, runs os specific operations
 -module(epax_os).
+-include("epax.hrl").
 -export([get_abs_path/1,
          mkdir/1,
          copy_folder/2,
@@ -36,39 +37,29 @@
 %% ====================================================================
 %% @doc returns absolute path to the given location which is relative to
 %% .epax folder
--spec get_abs_path(Location) -> Result when
+-spec get_abs_path(Location) -> Result | no_return() when
     Location :: string(),
     Result   :: string().
 %% ====================================================================
 get_abs_path(Location) ->
-    Home = case init:get_argument(home) of
-        {ok, [[Path]]} ->
-            Path;
+    case init:get_argument(home) of
+        {ok, [[Home]]} ->
+            case string:str(Location, Home) of
+                0 ->
+                    filename:join([Home, ".epax", Location]);
+                _ ->
+                    Location
+            end;
         error ->
             throw("cannot find the path to home folder")
-    end,
-    case string:str(Location, Home) of
-        0 ->
-            append_loc(Home, case Location of
-                "" ->
-                    "/.epax";
-                _ ->
-                    lists:concat(["/.epax/", Location])
-            end);
-        _ ->
-            Location
     end.
 
 %% mkdir/1
 %% ====================================================================
 %% @doc make the directory if it does not exist already. Also makes parent
 %% directories as needed.
--spec mkdir(Path) -> Result when
-    Path   :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data   :: string(),
-    Reason :: term().
+-spec mkdir(Path) -> ok | no_return() when
+    Path   :: string().
 %% ====================================================================
 mkdir(Path) ->
     case os:type() of
@@ -77,19 +68,20 @@ mkdir(Path) ->
         {win32, _} ->
             Cmd = lists:concat(["mkdir ", Path])
     end,
-    cmd(Cmd).
+    case cmd(Cmd) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            ?ABORT(Reason, "cannot create directory ~s", [Path])
+    end.
 
 %% copy_folder/2
 %% ====================================================================
 %% @doc copies one folder to another, creates the intermediate
 %% directories if required
--spec copy_folder(From, To) -> Result when
+-spec copy_folder(From, To) -> ok when
     From   :: string(),
-    To     :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data   :: string(),
-    Reason :: term().
+    To     :: string().
 %% ====================================================================
 copy_folder(From, To) ->
     mkdir(To),
@@ -99,18 +91,19 @@ copy_folder(From, To) ->
         {win32, _} ->
             Cmd = lists:concat(["xcopy ", From, " ", To, " /s/e"])
     end,
-    cmd(Cmd).
+    case cmd(Cmd) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            ?ABORT(Reason, "cannot copy ~s to ~s", [From, To])
+    end.
 
 %% mv_folder/2
 %% ====================================================================
 %% @doc moves content of one folder to another (renames the folder)
--spec mv_folder(From, To) -> Result when
+-spec mv_folder(From, To) -> ok when
     From   :: string(),
-    To     :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data   :: string(),
-    Reason :: term().
+    To     :: string().
 %% ====================================================================
 mv_folder(From, To) ->
     case os:type() of
@@ -119,17 +112,18 @@ mv_folder(From, To) ->
         {win32, _} ->
             Cmd = lists:concat(["move ", From, " ", To])
     end,
-    cmd(Cmd).
+    case cmd(Cmd) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            ?ABORT(Reason, "cannot move ~s to ~s", [From, To])
+    end.
 
 %% touch/1
 %% ====================================================================
 %% @doc creates an empty file
--spec touch(Path) -> Result when
-    Path   :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data   :: string(),
-    Reason :: term().
+-spec touch(Path) -> ok when
+    Path   :: string().
 %% ====================================================================
 touch(Path) ->
     case os:type() of
@@ -138,17 +132,18 @@ touch(Path) ->
         {win32, _} ->
             Cmd = lists:concat(["echo $null > ", Path])
     end,
-    cmd(Cmd).
+    case cmd(Cmd) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            ?ABORT(Reason, "cannot touch ~s", [Path])
+    end.
 
 %% rmdir/1
 %% ====================================================================
-%% @doc deletes an empty file
--spec rmdir(Path) -> Result when
-    Path   :: string(),
-    Result :: {ok, Data}
-            | {error, Reason},
-    Data :: string(),
-    Reason :: term().
+%% @doc deletes the given directory
+-spec rmdir(Path) -> ok when
+    Path   :: string().
 %% ====================================================================
 rmdir(Path) ->
     case os:type() of
@@ -157,7 +152,12 @@ rmdir(Path) ->
         {win32, _} ->
             Cmd = lists:concat(["rmdir /s/q ", Path])
     end,
-    cmd(Cmd).
+    case cmd(Cmd) of
+        {ok, _} ->
+            ok;
+        {error, Reason} ->
+            ?ABORT(Reason, "cannot delte directory ~s", [Path])
+    end.
 
 %% run_in_dir/2
 %% ====================================================================
@@ -175,13 +175,6 @@ run_in_dir(Path, Cmd) ->
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
-append_loc(Home, Loc) ->
-    case os:type() of
-        {unix, _} ->
-            lists:append(Home, Loc);
-        {win32, _} ->
-            lists:append(Home, re:replace(Loc, "/", "\\", [global, {return, list}]))
-    end.
 
 cmd(Cmd) ->
     Port = erlang:open_port({spawn, Cmd}, [exit_status]),

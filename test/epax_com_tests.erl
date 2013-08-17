@@ -44,7 +44,8 @@ get_appfile_content_test_() ->
 
         ?assertEqual(ok, epax_com:get_appfile_content(appname)),
         ?assertEqual(1, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
-        ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"]))
+        ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
+        ?assertEqual(0, meck:num_calls(file, list_dir, ["packages/appname/src"]))
     end},
     {"test for get_appfile_content when .app.src file is used",
     fun() ->
@@ -81,7 +82,51 @@ get_appfile_content_test_() ->
             ("packages/appname/src") ->
                 {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src"]} end),
 
-        ?assertEqual({error,"app.src or .app file does not exist"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, "app or app.src file not found"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
+        ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
+        ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
+        ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/src"]))
+    end},
+    {"test for get_appfile_content when there are multiple .app files",
+    fun() ->
+        % mocking get_abs_path function
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        
+        % mocking functions of file module
+        meck:expect(file, consult, fun("packages/appname/src/meck.app.src") -> ok end),
+        meck:expect(file, list_dir, fun
+            ("packages/appname/ebin") ->
+                {ok,["meck_expect.beam","meck_code_gen.beam","meck_code.beam",
+                     "meck_matcher.beam","meck_proc.beam","meck_args_matcher.beam",
+                     "meck_ret_spec.beam","meck_app.beam","meck_util.beam",
+                     "meck_dup.app", "meck.app"]};
+            ("packages/appname/src") ->
+                {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src"]} end),
+
+        ?assertEqual({error, "more than one .app file in ebin folder"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
+        ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
+        ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
+        ?assertEqual(0, meck:num_calls(file, list_dir, ["packages/appname/src"]))
+    end},
+    {"test for get_appfile_content when there are multiple .app.src files",
+    fun() ->
+        % mocking get_abs_path function
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        
+        % mocking functions of file module
+        meck:expect(file, consult, fun("packages/appname/src/meck.app.src") -> ok end),
+        meck:expect(file, list_dir, fun
+            ("packages/appname/ebin") ->
+                {ok,["meck_expect.beam","meck_code_gen.beam","meck_code.beam",
+                     "meck_matcher.beam","meck_proc.beam","meck_args_matcher.beam",
+                     "meck_ret_spec.beam","meck_app.beam","meck_util.beam"]};
+            ("packages/appname/src") ->
+                {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src",
+                    "meck.app.src", "meck_dup.app.src"]} end),
+
+        ?assertEqual({error, "more than one .app.src file in src folder"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
@@ -101,7 +146,7 @@ get_appfile_content_test_() ->
             ("packages/appname/src") ->
                 {error, "error"} end),
 
-        ?assertEqual({error, "error"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, "app or app.src file not found"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
