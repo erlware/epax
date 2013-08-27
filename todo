@@ -1,17 +1,12 @@
 dependency graph
 get opt (command line utility) [figure out what possible options to have]
 config file [figure out the exact purpose of the file]
-show details on terminal of the activity going on currently [how can I do this?]
 semver [how to implement?]
-
-what if the master branch is empty for the app [is it even possible?]
 autocomplete command
+
+show details on terminal of the activity going on currently [how can I do this?]
 doesn't work for same application different publisher
-agner
 some kind of scan command which fixes broken packages
-handle all possible output of a command
-run_in_dir function
-erlando
 
 
 example commands
@@ -45,6 +40,7 @@ example commands
 ./epax list
 ./epax remove folsom
 ./epax update
+./epax check
 
 ./epax bundle relx
 ./epax bundle episcina

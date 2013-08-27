@@ -38,6 +38,8 @@ main(["remove"|[Appname]]) ->
     epax_app:remove_app(list_to_atom(Appname));
 main(["update"]) ->
     epax_app:update();
+main(["check"]) ->
+    epax_app:check();
 main(["bundle"|[Appname]]) ->
     epax_app:bundle(list_to_atom(Appname));
 main(Args) ->

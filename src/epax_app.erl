@@ -25,7 +25,8 @@
          remove_app/1,
          list_apps/0,
          update/0,
-         bundle/1]).
+         bundle/1,
+         check/0]).
 
 
 %%============================================================================
@@ -108,6 +109,20 @@ update() ->
             ?SUCCESS("index updated successfully");
         {error, Reason} ->
             ?ERROR(Reason, "unable to update index")
+    end.
+
+%% check/0
+%% ====================================================================
+%% @doc verifies that there are no broken packages (index description
+%% matches with the downloaded package)
+-spec check() -> ok.
+%% ====================================================================
+check() ->
+    case epax_index:check_index() of
+        ok ->
+            ?SUCCESS("fixed broken packages");
+        {error, Reason} ->
+            ?ERROR(Reason, "unable to fix broken packages")
     end.
 
 %% bundle/0

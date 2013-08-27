@@ -156,7 +156,7 @@ rmdir(Path) ->
         {ok, _} ->
             ok;
         {error, Reason} ->
-            ?ABORT(Reason, "cannot delte directory ~s", [Path])
+            ?ABORT(Reason, "cannot delete directory ~s", [Path])
     end.
 
 %% run_in_dir/2

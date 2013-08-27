@@ -25,7 +25,8 @@
 		 checkout_repo_and_add_to_index/1,
          remove_from_index/1,
          get_applist/0,
-         update_index/0]).
+         update_index/0,
+         check_index/0]).
 
 
 %%============================================================================
@@ -161,6 +162,18 @@ update_index() ->
             {error, "please run `epax install` before running other epax commands"}
     end.
 
+%% check_index/0
+%% ====================================================================
+%% @doc assuming the index correct, verifies the downloaded packages
+-spec check_index() -> ok.
+%% ====================================================================
+check_index() ->
+    case file:consult(epax_os:get_abs_path("index.cfg")) of
+        {ok, [Existing_apps]} ->
+            check_apps(Existing_apps);
+        {error, _} ->
+            epax_app:install()
+    end.
 
 %%%===================================================================
 %%% Internal Functions
@@ -184,3 +197,47 @@ app_exists(Info, Existing_apps) when is_atom(Info) ->
     end;
 app_exists(_, _) ->
     false.
+
+check_apps(Existing_apps) ->
+    {ok, All_pkgs} = file:list_dir(epax_os:get_abs_path("packages")),
+    {Apps, Extra_dirs} = lists:foldl(fun(App_info, {Apps, Pkgs}) ->
+        fix_package_if(App_info, Apps, Pkgs)
+    end,
+    {[], All_pkgs},
+    Existing_apps),
+    case write_to_index_file(Apps) of
+        ok ->
+            lists:foreach(fun(Dir) ->
+                Path = epax_os:get_abs_path(filename:join("packages", Dir)),
+                epax_os:rmdir(Path)
+            end,
+            Extra_dirs);
+        {error, _} = E ->
+            E
+    end.
+
+fix_package_if(App_info, Apps, Pkgs) ->
+    App = element(1, App_info),
+    Rest_pkgs = lists:delete(atom_to_list(App), Pkgs),
+    case epax_repo:update_repo(App_info) of
+        {ok, New_app_info} ->
+            ?CONSOLE(" => ~p checked and updated!~n", [App]),
+            {[New_app_info|Apps], Rest_pkgs};
+        {error, _} ->
+            case try_cloning_again(App_info) of
+                {ok, New_app_info} ->
+                    {[New_app_info|Apps], Rest_pkgs};
+                {error, Reason} ->
+                    ?CONSOLE("  ** ~p: unable to fix, because ~p~n", [App, Reason]),
+                    {Apps, Rest_pkgs}
+            end
+    end.
+
+try_cloning_again(App_info) ->
+    Path = epax_os:get_abs_path(filename:join("packages", element(1, App_info))),
+    case (catch epax_os:rmdir(Path)) of
+        ok ->
+            epax_repo:clone_app(element(2, App_info));
+        E ->
+            {error, E}
+    end.
