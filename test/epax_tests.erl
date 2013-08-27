@@ -59,6 +59,13 @@ main_test_() ->
         ?assertEqual(1, meck:num_calls(epax_app, update, [])),
         ?assert(meck:validate(epax_app))
     end},
+    {"test for check command",
+    fun() ->
+        meck:expect(epax_app, check, fun() -> ok end),
+        ?assertEqual(ok, epax:main(["check"])),
+        ?assertEqual(1, meck:num_calls(epax_app, check, [])),
+        ?assert(meck:validate(epax_app))
+    end},
     {"test for bundle command",
     fun() ->
         meck:expect(epax_app, bundle, fun(appname) -> ok end),

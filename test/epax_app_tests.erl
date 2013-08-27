@@ -162,6 +162,27 @@ update_test_() ->
         ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to update index"]))
     end}]}.
 
+check_test_() ->
+    {foreach,
+    fun() -> meck:new([epax_com, epax_index]) end,
+    fun(_) -> meck:unload([epax_com, epax_index]) end,
+    [{"test for check index",
+    fun() ->
+        meck:expect(epax_index, check_index, fun() -> ok end),
+        meck:expect(epax_com, print_success, fun("fixed broken packages") -> ok end),
+        ?assertEqual(ok, epax_app:check()),
+        ?assertEqual(1, meck:num_calls(epax_index, check_index, [])),
+        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["fixed broken packages"]))
+    end},
+    {"test for check index while failed",
+    fun() ->
+        meck:expect(epax_index, check_index, fun() -> {error, "error"} end),
+        meck:expect(epax_com, print_error, fun("error", "unable to fix broken packages") -> ok end),
+        ?assertEqual(ok, epax_app:check()),
+        ?assertEqual(1, meck:num_calls(epax_index, check_index, [])),
+        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to fix broken packages"]))
+    end}]}.
+
 bundle_test_() ->
     {foreach,
     fun() -> meck:new([epax_com, epax_dep]) end,
