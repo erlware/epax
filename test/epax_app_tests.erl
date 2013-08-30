@@ -20,28 +20,28 @@
 -module(epax_app_tests).
 -include_lib("eunit/include/eunit.hrl").
 
-install_test_() ->
+init_test_() ->
     {foreach,
     fun() -> meck:new([epax_com, epax_index, epax_os]) end,
     fun(_) -> meck:unload() end,
-    [{"test installation of epax",
+    [{"test for init of epax",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
         meck:expect(epax_os, mkdir, fun("loc") -> {ok, done} end),
         meck:expect(epax_index, init, fun() -> ok end),
-        meck:expect(epax_com, print_success, fun("epax successfully installed") -> ok end),
-        ?assertEqual(ok, epax_app:install()),
+        meck:expect(epax_com, print_success, fun("epax successfully initialized") -> ok end),
+        ?assertEqual(ok, epax_app:init()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, [""])),
         ?assertEqual(1, meck:num_calls(epax_os, mkdir, ["loc"])),
         ?assertEqual(1, meck:num_calls(epax_index, init, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["epax successfully installed"])),
+        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["epax successfully initialized"])),
         meck:validate([epax_com, epax_index, epax_os])
     end},
-    {"test failed installation of epax when mkdir returns error",
+    {"test failed initialization of epax when mkdir returns error",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
         meck:expect(epax_os, mkdir, fun("loc") -> throw("error") end),
-        ?assertThrow("error", epax_app:install()),
+        ?assertThrow("error", epax_app:init()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, [""])),
         ?assertEqual(1, meck:num_calls(epax_os, mkdir, ["loc"])),
         ?assertNot(meck:called(epax_index, init, [])),

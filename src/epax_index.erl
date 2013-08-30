@@ -65,7 +65,7 @@ app_exists(Info) ->
         {ok, [Existing_apps]} ->
             {ok, app_exists(Info, Existing_apps)};
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands"}
+            {error, "please run `epax init` before running other epax commands"}
     end.
 
 %% checkout_repo_and_add_to_index/1
@@ -96,7 +96,7 @@ checkout_repo_and_add_to_index(Link) ->
                     E
             end;
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands"}
+            {error, "please run `epax init` before running other epax commands"}
     end.
 
 %% remove_from_index/1
@@ -115,7 +115,7 @@ remove_from_index(Appname) ->
             epax_os:rmdir(epax_os:get_abs_path(Path)),
             write_to_index_file(lists:keydelete(Appname, 1, Existing_apps));
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands"}
+            {error, "please run `epax init` before running other epax commands"}
     end.
 
 %% get_applist/0
@@ -133,7 +133,7 @@ get_applist() ->
             Unsorted_apps = lists:map(fun(App) -> element(1, App) end, Existing_apps),
             {ok, lists:sort(Unsorted_apps)};
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands"}
+            {error, "please run `epax init` before running other epax commands"}
     end.
 
 %% update_index/0
@@ -159,7 +159,7 @@ update_index() ->
                 [],
                 Existing_apps)));
         {error, _} ->
-            {error, "please run `epax install` before running other epax commands"}
+            {error, "please run `epax init` before running other epax commands"}
     end.
 
 %% check_index/0
@@ -172,12 +172,13 @@ check_index() ->
         {ok, [Existing_apps]} ->
             check_apps(Existing_apps);
         {error, _} ->
-            epax_app:install()
+            epax_app:init()
     end.
 
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
+
 write_to_index_file(Data) ->
     file:write_file(epax_os:get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
 

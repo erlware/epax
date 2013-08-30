@@ -20,7 +20,7 @@
 %%% @doc main epax application module
 -module(epax_app).
 -include("epax.hrl").
--export([install/0,
+-export([init/0,
          add_app/1,
          remove_app/1,
          list_apps/0,
@@ -33,16 +33,16 @@
 %% API
 %%============================================================================
 
-%% install/0
+%% init/0
 %% ====================================================================
-%% @doc installs epax, initializes index
--spec install() -> ok.
+%% @doc initializes index
+-spec init() -> ok.
 %% ====================================================================
-install() ->
+init() ->
     Epax_loc = epax_os:get_abs_path(""),
     epax_os:mkdir(Epax_loc),
     epax_index:init(),
-    ?SUCCESS("epax successfully installed").
+    ?SUCCESS("epax successfully initialized").
 
 %% add_app/1
 %% ====================================================================

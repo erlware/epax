@@ -16,7 +16,10 @@
 %% @author Aman Mangal <mangalaman93@gmail.com>
 %% @copyright (C) 2012 Erlware, LLC.
 
-% macro to fromat string
+% command line tool name
+-define(EPAX, "epax").
+
+% macro to format string
 -define(FMT(String, Args), lists:flatten(io_lib:format(String, Args))).
 
 % success macro

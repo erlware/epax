@@ -51,7 +51,7 @@ app_exists_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax install` before running other epax commands"},
+        ?assertEqual({error, "please run `epax init` before running other epax commands"},
                      epax_index:app_exists(appname)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -152,7 +152,7 @@ checkout_repo_and_add_to_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax install` before running other epax commands"},
+        ?assertEqual({error, "please run `epax init` before running other epax commands"},
                      epax_index:checkout_repo_and_add_to_index("link3")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
@@ -240,7 +240,7 @@ remove_from_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax install` before running other epax commands"},
+        ?assertEqual({error, "please run `epax init` before running other epax commands"},
                      epax_index:remove_from_index(app2)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(0, meck:num_calls(epax_os, get_abs_path, ["packages/app2"])),
@@ -267,7 +267,7 @@ get_applist_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax install` before running other epax commands"},
+        ?assertEqual({error, "please run `epax init` before running other epax commands"},
                      epax_index:get_applist()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -437,7 +437,7 @@ check_index_test_() ->
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
-        meck:expect(epax_app, install, fun() -> ok end),
+        meck:expect(epax_app, init, fun() -> ok end),
 
         ?assertEqual(ok, epax_index:check_index()),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
@@ -453,7 +453,7 @@ update_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax install` before running other epax commands"},
+        ?assertEqual({error, "please run `epax init` before running other epax commands"},
                      epax_index:update_index()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))

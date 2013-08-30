@@ -19,6 +19,7 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc main epax module
 -module(epax).
+-include("epax.hrl").
 -export([main/1]).
 
 
@@ -28,8 +29,10 @@
 
 %% main/1
 %% ====================================================================
-main(["install"]) ->
-    epax_app:install();
+main([]) ->
+    print_epax_help();
+main(["init"]) ->
+    epax_app:init();
 main(["add"|[Link]]) ->
     epax_app:add_app(Link);
 main(["list"]) ->
@@ -43,4 +46,46 @@ main(["check"]) ->
 main(["bundle"|[Appname]]) ->
     epax_app:bundle(list_to_atom(Appname));
 main(Args) ->
-    io:format("** invalid subcommand: ~p~n", [string:join(Args, " ")]).
+    OptSpecList = option_spec_list(),
+    case getopt:parse(OptSpecList, Args) of
+        {ok, {Options, _NonOptArgs}} ->
+            handle_options(Options);
+        {error, {Reason, Data}} ->
+            io:format("** error: ~s ~p~n~n", [Reason, Data]),
+            print_epax_help()
+    end.
+
+
+%%%===================================================================
+%%% Internal Functions
+%%%===================================================================
+
+option_spec_list() ->
+    [
+     %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
+     {help,        $h,        "help",        undefined,             "Show the program options"}
+    ].
+
+handle_options([{help, true}]) ->
+    print_epax_help();
+handle_options(Args) ->
+    io:format("** invalid options: ~p~n~n", [string:join(Args, " ")]),
+    print_epax_help().
+
+print_epax_help() ->
+    Help_Message = <<"epax (erlang package manager) version 0.0.0
+Usage: epax command [options]
+
+Commands:
+    init                Initialize the index, deletes old index or packages if any
+    add    <repo_link>  Add new package into index (repo must follow OTP structure)
+    list                List down all packages in the index in lexicographical order
+    remove <appname>    Remove the package from index
+    update              Update information about all packages added into the index
+    check               Trie to fix broken packages if any, updates the index too
+    bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
+
+Options:
+    -h, --help          Show the commands and options (this message)
+">>,
+    io:put_chars(Help_Message).
