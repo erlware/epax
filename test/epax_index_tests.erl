@@ -439,7 +439,7 @@ check_index_test_() ->
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
         meck:expect(epax_app, init, fun() -> ok end),
 
-        ?assertEqual(ok, epax_index:check_index()),
+        ?assertEqual({error, "error"}, epax_index:check_index()),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])) 
     end}]}.

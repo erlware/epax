@@ -19,3 +19,18 @@
 %%% @copyright (C) 2012 Erlware, LLC.
 -module(epax_os_tests).
 -include_lib("eunit/include/eunit.hrl").
+
+get_abs_path_test_() ->
+    {foreach,
+    fun() -> meck:new([]) end,
+    fun(_) -> meck:unload([]) end,
+    [{"test for get_abs_path function",
+    fun() ->    
+        {ok, [[Home]]} = init:get_argument(home),
+        ?assertEqual(filename:join([Home, ".epax"]), epax_os:get_abs_path(""))
+    end},
+    {"test for get_abs_path function for dir",
+    fun() ->    
+        {ok, [[Home]]} = init:get_argument(home),
+        ?assertEqual(filename:join([Home, ".epax/aman"]), epax_os:get_abs_path("aman"))
+    end}]}.

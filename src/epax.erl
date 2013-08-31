@@ -82,7 +82,7 @@ Commands:
     list                List down all packages in the index in lexicographical order
     remove <appname>    Remove the package from index
     update              Update information about all packages added into the index
-    check               Trie to fix broken packages if any, updates the index too
+    check               Try to fix broken packages if any, updates the index too
     bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
 
 Options:

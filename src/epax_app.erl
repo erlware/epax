@@ -119,10 +119,10 @@ update() ->
 %% ====================================================================
 check() ->
     case epax_index:check_index() of
-        ok ->
-            ?SUCCESS("fixed broken packages");
         {error, Reason} ->
-            ?ERROR(Reason, "unable to fix broken packages")
+            ?ERROR(Reason, "unable to fix broken packages, reinitialized the index");
+        ok ->
+            ?SUCCESS("fixed broken packages")
     end.
 
 %% bundle/0

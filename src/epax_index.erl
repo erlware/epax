@@ -165,14 +165,16 @@ update_index() ->
 %% check_index/0
 %% ====================================================================
 %% @doc assuming the index correct, verifies the downloaded packages
--spec check_index() -> ok.
+-spec check_index() -> ok | {error, Reason} when
+    Reason :: term().
 %% ====================================================================
 check_index() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
             check_apps(Existing_apps);
-        {error, _} ->
-            epax_app:init()
+        {error, _} = E ->
+            epax_app:init(),
+            E
     end.
 
 %%%===================================================================

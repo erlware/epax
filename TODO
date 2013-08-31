@@ -8,9 +8,8 @@ show details on terminal of the activity going on currently [how can I do this?]
 doesn't work for same application different publisher
 some kind of scan command which fixes broken packages
 
-getopt for type of repo
-bzr, svn
-readme file, commands
+configuration option(include any already existing package, or to ignore, repo type)
+bzr, svn support
 
 example commands
 ########################

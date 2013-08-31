@@ -58,7 +58,7 @@ clone_app(Link) ->
                             E
                     end;
                 false ->
-                    {error, "unable to download repo!"}
+                    {error, "unable to download repo"}
             end;
         {error, _} = E ->
             E
@@ -68,7 +68,7 @@ clone_app(Link) ->
 %% ====================================================================
 %% @doc updates the repository, returns the new index entry
 -spec update_repo(App) -> Result when
-    App         :: tuple(),
+    App         :: {Appname, Link, [{Key, Value}]},
     Result      :: {ok, Index_entry}
                  | {error, Reason},
     Index_entry :: {Appname, Link, [{Key, Value}]},
@@ -80,8 +80,12 @@ clone_app(Link) ->
 %% ====================================================================
 update_repo(App) ->
     Path = epax_os:get_abs_path(filename:join("packages", element(1, App))),
-    update_files(element(2, App), Path),
-    get_app_info(element(2, App), Path).
+    case update_files(element(2, App), Path) of
+        {error, _} = E ->
+            E;
+        _ ->
+            get_app_info(element(2, App), Path)
+    end.
 
 
 %%%===================================================================
@@ -91,7 +95,7 @@ update_repo(App) ->
 type_of_repo(Link) ->
     case string:str(Link, ".git") of
         0 ->
-            {error, "unknown type of repo"};
+            {error, "unknown type of repo, use -r option to specify type of repo"};
         _ ->
             {ok, git}
     end.
@@ -145,7 +149,7 @@ collect_tags(Path) ->
         end
     end,
     [],
-    re:split(List_tags, "\n")).
+    re:split(List_tags, "[\n ]")).
 
 collect_branches(Path) ->
     Ret = epax_os:run_in_dir(Path, "git branch --remote"),

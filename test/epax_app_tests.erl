@@ -177,10 +177,10 @@ check_test_() ->
     {"test for check index while failed",
     fun() ->
         meck:expect(epax_index, check_index, fun() -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to fix broken packages") -> ok end),
+        meck:expect(epax_com, print_error, fun("error", "unable to fix broken packages, reinitialized the index") -> ok end),
         ?assertEqual(ok, epax_app:check()),
         ?assertEqual(1, meck:num_calls(epax_index, check_index, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to fix broken packages"]))
+        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to fix broken packages, reinitialized the index"]))
     end}]}.
 
 bundle_test_() ->
