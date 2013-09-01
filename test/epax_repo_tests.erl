@@ -25,7 +25,57 @@ clone_app_test_() ->
     {foreach,
     fun() -> meck:new([epax_os, epax_com, filelib], [passthrough, unstick]) end,
     fun(_) -> meck:unload([epax_os, epax_com, filelib]) end,
-    [{"test for clone_app function",
+    [{"test for clone_app function for svn",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(filelib, is_dir, fun("packages/temp") -> true end),
+        Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
+                                                     {included_applications, [b, c, d, ssl]},
+                                                     {author, "author"},
+                                                     {description, "description"}]}]},
+        meck:expect(epax_com, get_appfile_content, fun("packages/temp") -> Appfile_content end),
+        meck:expect(epax_os, run_in_dir, fun("", "svn checkout link.svn packages/temp") ->
+                                                ok;
+                                            ("packages/temp", "svnversion") ->
+                                                "324\n" end),
+        meck:expect(epax_os, mv_folder, fun("packages/temp", "packages/app1") -> ok end),
+
+        ?assertEqual({ok, #application{name=app1, repo_link="link.svn", repo_type=svn, details=[{description, "description"},
+                                                                                               {publisher, "author"},
+                                                                                               {max_rev, 324}]}},
+                      epax_repo:clone_app("link.svn")),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["", "svn checkout link.svn packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "svnversion"])),
+        ?assertEqual(1, meck:num_calls(epax_os, mv_folder, ["packages/temp", "packages/app1"]))
+    end},
+    {"test for clone_app function for bzr",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(filelib, is_dir, fun("packages/temp") -> true end),
+        Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
+                                                     {included_applications, [b, c, d, ssl]},
+                                                     {author, "author"},
+                                                     {description, "description"}]}]},
+        meck:expect(epax_com, get_appfile_content, fun("packages/temp") -> Appfile_content end),
+        meck:expect(epax_os, run_in_dir, fun("", "bzr branch lp:link packages/temp") ->
+                                                ok;
+                                            ("packages/temp", "bzr revno") ->
+                                                "248\n" end),
+        meck:expect(epax_os, mv_folder, fun("packages/temp", "packages/app1") -> ok end),
+
+        ?assertEqual({ok, #application{name=app1, repo_link="lp:link", repo_type=bzr, details=[{description, "description"},
+                                                                                               {publisher, "author"},
+                                                                                               {max_rev, 248}]}},
+                      epax_repo:clone_app("lp:link")),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["", "bzr branch lp:link packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "bzr revno"])),
+        ?assertEqual(1, meck:num_calls(epax_os, mv_folder, ["packages/temp", "packages/app1"]))
+    end},
+    {"test for clone_app function for git",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(filelib, is_dir, fun("packages/temp") -> true end),
@@ -89,7 +139,59 @@ update_repo_test_() ->
     {foreach,
     fun() -> meck:new([epax_os, epax_com], [passthrough]) end,
     fun(_) -> meck:unload([epax_os, epax_com]) end,
-    [{"test for update_repo function 1",
+    [{"test for update_repo function for svn",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
+                                                     {included_applications, [b, c, d, ssl]},
+                                                     {author, "author"},
+                                                     {description, "description"}]}]},
+        meck:expect(epax_com, get_appfile_content, fun("packages/app1") -> Appfile_content end),
+        meck:expect(epax_os, run_in_dir, fun("packages/app1", "svn update") ->
+                                                {ok, data};
+                                            ("packages/app1", "svnversion") ->
+                                                "  448\n" end),
+
+        App = #application{name=app1, repo_link="http://www.svn.example.com/repo", repo_type=svn, details=[]},
+        ?assertEqual({ok, #application{name=app1,
+                                       repo_link="http://www.svn.example.com/repo",
+                                       repo_type=svn,
+                                       details=[{description, "description"},
+                                                {publisher, "author"},
+                                                {max_rev, 448}]}},
+                      epax_repo:update_repo(App)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"])),
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/app1"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "svn update"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "svnversion"]))
+    end},
+    {"test for update_repo function for bzr",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
+                                                     {included_applications, [b, c, d, ssl]},
+                                                     {author, "author"},
+                                                     {description, "description"}]}]},
+        meck:expect(epax_com, get_appfile_content, fun("packages/app1") -> Appfile_content end),
+        meck:expect(epax_os, run_in_dir, fun("packages/app1", "bzr update") ->
+                                                {ok, data};
+                                            ("packages/app1", "bzr revno") ->
+                                                "  48\n" end),
+
+        App = #application{name=app1, repo_link="launchpad.com/~~link", repo_type=bzr, details=[]},
+        ?assertEqual({ok, #application{name=app1,
+                                       repo_link="launchpad.com/~~link",
+                                       repo_type=bzr,
+                                       details=[{description, "description"},
+                                                {publisher, "author"},
+                                                {max_rev, 48}]}},
+                      epax_repo:update_repo(App)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"])),
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/app1"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "bzr update"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "bzr revno"]))
+    end},
+    {"test for update_repo function 1 for git",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
@@ -104,14 +206,17 @@ update_repo_test_() ->
                                             ("packages/app1", "git branch --remote") ->
                                                 "  origin/HEAD -> origin/master\n  origin/feature_pages\n  origin/master\n" end),
 
-        App = {app1, ".git", []},
-        ?assertEqual({ok, {app1, ".git", [{description, "description"},
-                                           {publisher, "author"},
-                                           {tags, ["v0.2.9","v0.2.8","v0.2.7","v0.2.6","v0.2.5","v0.2.4",
-                                                   "v0.2.3","v0.2.2","v0.2.11","v0.2.10","v0.2.1","v0.2.0",
-                                                   "v0.1.2","v0.1.1","v0.1.0","0.2.16","0.2.15","0.2.14",
-                                                   "0.2.13","0.2.12"]},
-                                           {branches, ["master","feature_pages"]}]}},
+        App = #application{name=app1, repo_link=".git", repo_type=git, details=[]},
+        ?assertEqual({ok, #application{name=app1,
+                                       repo_link=".git",
+                                       repo_type=git,
+                                       details=[{description, "description"},
+                                                {publisher, "author"},
+                                                {tags, ["v0.2.9","v0.2.8","v0.2.7","v0.2.6","v0.2.5","v0.2.4",
+                                                        "v0.2.3","v0.2.2","v0.2.11","v0.2.10","v0.2.1","v0.2.0",
+                                                        "v0.1.2","v0.1.1","v0.1.0","0.2.16","0.2.15","0.2.14",
+                                                        "0.2.13","0.2.12"]},
+                                                {branches, ["master","feature_pages"]}]}},
                       epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/app1"])),
@@ -119,7 +224,7 @@ update_repo_test_() ->
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "git tag"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "git branch --remote"]))
     end},
-    {"test for update_repo function 2",
+    {"test for update_repo function 2 for git",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
@@ -134,19 +239,22 @@ update_repo_test_() ->
                                             ("packages/app1", "git branch --remote") ->
                                                 "  origin/HEAD -> origin/master\n  origin/gh-pages\n  origin/master\n" end),
 
-        App = {app1, ".git", []},
-        ?assertEqual({ok, {app1, ".git", [{description, "description"},
-                                           {publisher, "author"},
-                                           {tags, []},
-                                           {branches, ["master","gh-pages"]}]}},
-                      epax_repo:update_repo(App)),
+        App = #application{name=app1, repo_link=".git", repo_type=git, details=[]},
+        ?assertEqual({ok, #application{name=app1,
+                                       repo_link=".git",
+                                       repo_type=git,
+                                       details=[{description, "description"},
+                                                {publisher, "author"},
+                                                {tags, []},
+                                                {branches, ["master","gh-pages"]}]}},
+                     epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/app1"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "git pull"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "git tag"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/app1", "git branch --remote"]))
     end},
-    {"test for update_repo function 3",
+    {"test for update_repo function 3 for git",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
@@ -160,14 +268,17 @@ update_repo_test_() ->
                                             ("packages/app1", "git branch --remote") ->
                                                 "  origin/HEAD -> origin/master\n  origin/feature_pages\n  origin/master\n" end),
 
-        App = {app1, ".git", []},
-        ?assertEqual({ok, {app1, ".git", [{description, ""},
-                                           {publisher, "author"},
-                                           {tags, ["v0.2.9","v0.2.8","v0.2.7","v0.2.6","v0.2.5","v0.2.4",
-                                                   "v0.2.3","v0.2.2","v0.2.11","v0.2.10","v0.2.1","v0.2.0",
-                                                   "v0.1.2","v0.1.1","v0.1.0","0.2.16","0.2.15","0.2.14",
-                                                   "0.2.13","0.2.12"]},
-                                           {branches, ["master","feature_pages"]}]}},
+        App = #application{name=app1, repo_link=".git", repo_type=git, details=[]},
+        ?assertEqual({ok, #application{name=app1,
+                                       repo_link=".git",
+                                       repo_type=git,
+                                       details=[{description, ""},
+                                                {publisher, "author"},
+                                                {tags, ["v0.2.9","v0.2.8","v0.2.7","v0.2.6","v0.2.5","v0.2.4",
+                                                        "v0.2.3","v0.2.2","v0.2.11","v0.2.10","v0.2.1","v0.2.0",
+                                                        "v0.1.2","v0.1.1","v0.1.0","0.2.16","0.2.15","0.2.14",
+                                                        "0.2.13","0.2.12"]},
+                                                {branches, ["master","feature_pages"]}]}},
                       epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/app1"])),
@@ -181,14 +292,14 @@ update_repo_test_() ->
         meck:expect(epax_os, run_in_dir, fun("packages/app1", "git pull")-> {ok, data} end),
         meck:expect(epax_com, get_appfile_content, fun("packages/app1") -> {error, "error"} end),
 
-        App = {app1, ".git", []},
+        App = #application{name=app1, repo_link=".git", repo_type=git, details=[]},
         ?assertEqual({error, "error"}, epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"]))
     end},
     {"test for update_repo function when type of repo not determined",
     fun() ->    
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        App = {app1, "link", []},
+        App = #application{name=app1, repo_link="link", repo_type=git, details=[]},
         ?assertEqual({error, "unknown type of repo, use -r option to specify type of repo"},
                       epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"]))

@@ -22,9 +22,13 @@
 
 main_test_() ->
     {foreach,
-    fun() -> meck:new(epax_app) end,
-    fun(_) -> meck:unload(epax_app) end,
-    [{"test for init command",
+    fun() -> meck:new([getopt, io, epax_app], [unstick, passthrough]) end,
+    fun(_) -> meck:unload([getopt, io, epax_app]) end,
+    [{"test for empty command",
+    fun() ->
+        ?assertEqual(ok, epax:main([]))
+    end},
+    {"test for init command",
     fun() ->
         meck:expect(epax_app, init, fun() -> ok end),
         ?assertEqual(ok, epax:main(["init"])),
@@ -75,13 +79,13 @@ main_test_() ->
     end},
     {"test for invalid commands",
     fun() ->
-        ?assertEqual(ok, epax:main(["random"])),
-        ?assertEqual(ok, epax:main([])),
-        ?assertEqual(ok, epax:main(["some", "cmd"])),
-        ?assertError(undef, epax:main(["init"])),
-        ?assertError(undef, epax:main(["add", "link"])),
-        ?assertError(undef, epax:main(["list"])),
-        ?assertError(undef, epax:main(["remove", "appname"])),
-        ?assertError(undef, epax:main(["update"])),
-        ?assertError(undef, epax:main(["bundle", "appname"]))
+        meck:expect(getopt, parse, fun([{help,        $h,        "help",        undefined,             "Show the program options"},
+                                        {version,     $v,        "version",     undefined,             "Show the current version"}],
+                                       "invalid") -> {ok, {[], ["invalid"]}} end),
+        meck:expect(io, format, fun("** invalid command: ~p~n~n", [["invalid"]]) -> ok end),
+        ?assertEqual(ok, epax:main("invalid")),
+        ?assertEqual(1, meck:num_calls(getopt, parse, [[{help,        $h,        "help",        undefined,             "Show the program options"},
+                                                        {version,     $v,        "version",     undefined,             "Show the current version"}],
+                                                       "invalid"])),
+        ?assertEqual(1, meck:num_calls(io, format, ["** invalid command: ~p~n~n", [["invalid"]]]))
     end}]}.

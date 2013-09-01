@@ -91,12 +91,10 @@ update_repo(App) ->
 type_of_repo(Link) ->
     Git_test = string:str(Link, ".git") =/= 0,
     Bzr_test = (string:str(Link, "lp:") =/= 0) or (string:str(Link, "launchpad") =/= 0),
-    Svn_test = string:str(Link, ".svn") == 0,
+    Svn_test = string:str(Link, ".svn") =/= 0,
     if
         Git_test ->
             {ok, git};
-        Bzr_test ->
-            {ok, bzr};
         Bzr_test ->
             {ok, bzr};
         Svn_test ->
@@ -123,34 +121,24 @@ get_info(Repo_type, Link, Path) ->
             E
     end.
 
-get_app_info(git, Link, Path) ->
-    case find_publisher(Path) of
-        {ok, {Appname, Description, Author}} ->
-            Tags = collect_tags(Path),
-            Branches = collect_branches(Path),
-            {ok, #application{name=Appname,
-                              repo_link=Link,
-                              repo_type=git,
-                              details=[{description, Description},
-                                        {publisher, Author},
-                                        {tags, Tags},
-                                        {branches, Branches}]}};
-        {error, _} = E ->
-            E
-    end;
 get_app_info(Repo_type, Link, Path) ->
     case find_publisher(Path) of
         {ok, {Appname, Description, Author}} ->
-            Rev = collect_max_rev(Repo_type, Path),
             {ok, #application{name=Appname,
                               repo_link=Link,
                               repo_type=Repo_type,
-                              details=[{description, Description},
-                                        {publisher, Author},
-                                        {max_rev, Rev}]}};
+                              details=get_details(Repo_type, Description, Author, Path)}};
         {error, _} = E ->
             E
     end.
+
+get_details(git, Description, Author, Path) ->
+    Tags = collect_tags(Path),
+    Branches = collect_branches(Path),
+    [{description, Description}, {publisher, Author}, {tags, Tags}, {branches, Branches}];
+get_details(Repo_type, Description, Author, Path) ->
+    Rev = collect_max_rev(Repo_type, Path),
+    [{description, Description}, {publisher, Author}, {max_rev, Rev}].
 
 find_publisher(Path) ->
     case epax_com:get_appfile_content(Path) of
@@ -186,7 +174,7 @@ collect_tags(Path) ->
 
 collect_branches(Path) ->
     Ret = epax_os:run_in_dir(Path, "git branch --remote"),
-    List_branches = re:split(Ret, "[\n ]"),
+    List_branches = re:split(Ret, "\n"),
     lists:foldl(fun(Branch, Acc) ->
         Full_branch = binary_to_list(Branch),
         case erlang:length(re:split(Full_branch, "origin/")) of
@@ -203,11 +191,11 @@ collect_branches(Path) ->
 collect_max_rev(bzr, Path) ->
     Revs = epax_os:run_in_dir(Path, "bzr revno"),
     [Max_rev] = find_max_rev(Revs),
-    Max_rev;
+    list_to_integer(Max_rev);
 collect_max_rev(svn, Path) ->
     Revs = epax_os:run_in_dir(Path, "svnversion"),
     [Max_rev] = find_max_rev(Revs),
-    Max_rev.
+    list_to_integer(Max_rev).
 
 find_max_rev(Rev_List) ->
     lists:foldl(fun(R, Acc) ->
