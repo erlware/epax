@@ -18,6 +18,7 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 -module(epax_repo_tests).
+-include("epax.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 clone_app_test_() ->
@@ -41,10 +42,10 @@ clone_app_test_() ->
                                                 "  origin/HEAD -> origin/master\n  origin/dev\n  origin/master\n" end),
         meck:expect(epax_os, mv_folder, fun("packages/temp", "packages/app1") -> ok end),
 
-        ?assertEqual({ok, {app1, ".git", [{description, "description"},
-                                           {publisher, "author"},
-                                           {tags, ["v0.4.0","v0.3.0","v0.2.0"]},
-                                           {branches, ["master","dev"]}]}},
+        ?assertEqual({ok, #application{name=app1, repo_link=".git", repo_type=git, details=[{description, "description"},
+                                                                                            {publisher, "author"},
+                                                                                            {tags, ["v0.4.0","v0.3.0","v0.2.0"]},
+                                                                                            {branches, ["master","dev"]}]}},
                       epax_repo:clone_app(".git")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),

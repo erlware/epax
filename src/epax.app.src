@@ -17,8 +17,8 @@
 %% @copyright (C) 2012 Erlware, LLC.
 
 {application, epax,
- [{description, "Erlang Package Manager"},
-  {vsn, "0.0.0"},
-  {modules, []},
-  {registered, []},
-  {applications, [kernel, stdlib]}]}.
+    [{description, "Erlang Package Manager"},
+     {vsn, "1.0.0"},
+     {modules, []},
+     {registered, []},
+     {applications, [getopt]}]}.

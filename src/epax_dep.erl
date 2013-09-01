@@ -33,7 +33,7 @@
 %% app folder
 -spec bundle(Appname) -> Result when
     Appname :: atom(),
-    Result  ::  ok
+    Result  :: ok
              | {error, Reason},
     Reason  :: term().
 %% ====================================================================
@@ -41,8 +41,8 @@ bundle(Appname) ->
     case find_all_deps_recursively_for(Appname) of
         {ok, Deps} ->
             copy_all_deps(Deps, Appname);
-        {error, Reason} ->
-            {error, Reason}
+        {error, _} = E ->
+            E
     end.
 
 
@@ -54,8 +54,8 @@ find_all_deps_recursively_for(Appname) ->
     case find_all_deps_recursively_helper([Appname], []) of
         {ok, Deps} ->
             {ok, lists:delete(Appname, Deps)};
-        {error, Reason} ->
-            {error, Reason}
+        {error, _} = E ->
+            E
     end.
 
 find_all_deps_recursively_helper([], Already_added) ->
@@ -66,8 +66,8 @@ find_all_deps_recursively_helper([H|T], Already_added) ->
             case find_all_deps_for(H) of
                 {ok, Deps} ->
                     find_all_deps_recursively_helper(lists:append(T, Deps), [H|Already_added]);
-                {error, Reason} ->
-                    {error, Reason}
+                {error, _} = E ->
+                    E
             end;
         true ->
             find_all_deps_recursively_helper(T, Already_added)
@@ -79,8 +79,8 @@ find_all_deps_for(Appname) ->
             find_all_deps_for_helper(Appname);
         {ok, false} ->
             {error, ?FMT("~s is not found", [Appname])};
-        {error, Reason} ->
-            {error, Reason}
+        {error, _} = E ->
+            E
     end.
 
 find_all_deps_for_helper(Appname) ->
@@ -101,8 +101,8 @@ find_all_deps_for_helper(Appname) ->
             end,
             All_apps = lists:append(Include_app, App),
             {ok, delete_standard_apps(All_apps)};
-        {error, Reason} ->
-            {error, Reason}
+        {error, _} = E ->
+            E
     end.
 
 delete_standard_apps(Deps) ->

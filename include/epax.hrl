@@ -16,8 +16,12 @@
 %% @author Aman Mangal <mangalaman93@gmail.com>
 %% @copyright (C) 2012 Erlware, LLC.
 
-% command line tool name
+% application details
 -define(EPAX, "epax").
+-define(VERSION, "1.0.0").
+
+% index entry record
+-record(application, {name, repo_link, repo_type, details}).
 
 % macro to format string
 -define(FMT(String, Args), lists:flatten(io_lib:format(String, Args))).
@@ -36,7 +40,7 @@
 % abort the process
 -define(ABORT(Reason, Conclusion, Args), throw(Reason)).
 
-% other macros
+% standard application list
 -define(STAND_APPS, [compiler,
                      erts,
                      kernel,

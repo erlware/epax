@@ -1,18 +1,15 @@
-dependency graph
-get opt (command line utility) [figure out what possible options to have]
-config file [figure out the exact purpose of the file]
-semver [how to implement?]
-autocomplete command
-
-show details on terminal of the activity going on currently [how can I do this?]
-doesn't work for same application different publisher
-some kind of scan command which fixes broken packages
-
+issues and todo list (in order)
+###############################
 configuration option(include any already existing package, or to ignore, repo type)
-bzr, svn support
+doesn't work for same application different publisher
+show details on terminal of the activity going on currently [how can I do this?]
+auto complete command
+dependency graph
+semver [how to implement?]
 
-example commands
-########################
+
+example command set
+####################
 ./epax init
 ./epax add https://github.com/erlware/relx.git
 ./epax add https://github.com/erlware/episcina.git

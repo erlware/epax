@@ -30,7 +30,7 @@
 %% main/1
 %% ====================================================================
 main([]) ->
-    print_epax_help();
+    print_help();
 main(["init"]) ->
     epax_app:init();
 main(["add"|[Link]]) ->
@@ -48,11 +48,14 @@ main(["bundle"|[Appname]]) ->
 main(Args) ->
     OptSpecList = option_spec_list(),
     case getopt:parse(OptSpecList, Args) of
-        {ok, {Options, _NonOptArgs}} ->
+        {ok, {Options, []}} ->
             handle_options(Options);
+        {ok, {_, NonOptArgs}} ->
+            ?CONSOLE("** invalid command: ~p~n~n", [NonOptArgs]),
+            print_help();
         {error, {Reason, Data}} ->
-            io:format("** error: ~s ~p~n~n", [Reason, Data]),
-            print_epax_help()
+            ?CONSOLE("** error: ~s ~p~n", [Reason, Data]),
+            print_help()
     end.
 
 
@@ -63,29 +66,39 @@ main(Args) ->
 option_spec_list() ->
     [
      %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
-     {help,        $h,        "help",        undefined,             "Show the program options"}
+     {help,        $h,        "help",        undefined,             "Show the program options"},
+     {version,     $v,        "version",     undefined,             "Show the current version"}
     ].
 
-handle_options([{help, true}]) ->
-    print_epax_help();
-handle_options(Args) ->
-    io:format("** invalid options: ~p~n~n", [string:join(Args, " ")]),
-    print_epax_help().
+handle_options([help]) ->
+    print_help();
+handle_options([version]) ->
+    print_version();
+handle_options(Options) ->
+    ?CONSOLE("** invalid options: ~p~n", [Options]),
+    print_help().
 
-print_epax_help() ->
-    Help_Message = <<"epax (erlang package manager) version 0.0.0
-Usage: epax command [options]
+print_help() ->
+    Help_Message = << <<?EPAX>>/binary, <<" (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
+Usage: ">>/binary, <<?EPAX>>/binary, <<" command [options]
 
 Commands:
-    init                Initialize the index, deletes old index or packages if any
-    add    <repo_link>  Add new package into index (repo must follow OTP structure)
-    list                List down all packages in the index in lexicographical order
-    remove <appname>    Remove the package from index
-    update              Update information about all packages added into the index
-    check               Try to fix broken packages if any, updates the index too
-    bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
+  init                Initialize the index, deletes old index or packages if any
+  add    <repo_link>  Add new package into index (repo must follow OTP structure)
+  list                List down all packages in the index in lexicographical order
+  remove <appname>    Remove the package from index
+  update              Update information about all packages added into the index
+  check               Try to fix broken packages if any, updates the index too
+  bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
 
 Options:
-    -h, --help          Show the commands and options (this message)
-">>,
+  -h, --help          Show the commands and options (this message)
+  -v, --version       Show the current version
+
+">>/binary>>,
     io:put_chars(Help_Message).
+
+print_version() ->
+    Version_Message = << <<"epax (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
+">>/binary >>,
+    io:put_chars(Version_Message).

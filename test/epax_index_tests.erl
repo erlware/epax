@@ -18,6 +18,7 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 -module(epax_index_tests).
+-include("epax.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 init_test_() ->
@@ -51,7 +52,7 @@ app_exists_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax init` before running other epax commands"},
+        ?assertEqual({error, "run `epax init` before running other epax commands"},
                      epax_index:app_exists(appname)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -68,8 +69,8 @@ app_exists_test_() ->
     {"test for app_exists when app does not exist",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []}, {app2, "link2", []}]]} end),
-
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
         ?assertEqual({ok, false}, epax_index:app_exists(appname)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -77,8 +78,8 @@ app_exists_test_() ->
     {"test for app_exists when given app link",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
 
         ?assertEqual({ok, app2}, epax_index:app_exists("link2")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
@@ -87,8 +88,8 @@ app_exists_test_() ->
     {"test for app_exists when given app link not found",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
 
         ?assertEqual({ok, false}, epax_index:app_exists("link3")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
@@ -97,8 +98,8 @@ app_exists_test_() ->
     {"test for app_exists when function is called wrong",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
 
         ?assertEqual({ok, false}, epax_index:app_exists({})),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
@@ -107,8 +108,8 @@ app_exists_test_() ->
     {"test for app_exists",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
 
         ?assertEqual({ok, app2}, epax_index:app_exists(app2)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
@@ -122,28 +123,30 @@ checkout_repo_and_add_to_index_test_() ->
     [{"test for checkout_repo_and_add_to_index",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
-        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, {app3, "link3", []}} end),
-        meck:expect(file, write_file, fun("index.cfg", [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                                                             44,
-                                                             [123,["app1",44,"\"link1\"",44,"[]"],125],
-                                                             44,
-                                                             [123,["app2",44,"\"link2\"",44,"[]"],125]],
-                                                             93],
-                                                            46,10]) -> ok end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
+        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, #application{name=app3, repo_link="link3", repo_type=git, details=[]}} end),
+        meck:expect(file, write_file, fun("index.cfg", [[91,
+                                                          [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                                                           44,10," ",
+                                                           [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                                                           44,10," ",
+                                                           [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
+                                                          93],
+                                                         46,10]) -> ok end),
 
         ?assertEqual({ok, app3}, epax_index:checkout_repo_and_add_to_index("link3")),
         ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(epax_repo, clone_app, ["link3"])),
-        Result_apps = [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                        44,
-                        [123,["app1",44,"\"link1\"",44,"[]"],125],
-                        44,
-                        [123,["app2",44,"\"link2\"",44,"[]"],125]],
-                        93],
-                       46,10],
+        Result_apps = [[91,
+                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                          44,10," ",
+                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                          44,10," ",
+                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
+                         93],
+                        46,10],
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", Result_apps])),
         ?assertEqual(0, meck:num_calls(epax_os, rmdir, ["packages/app3"]))
     end},
@@ -152,16 +155,17 @@ checkout_repo_and_add_to_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax init` before running other epax commands"},
+        ?assertEqual({error, "run `epax init` before running other epax commands"},
                      epax_index:checkout_repo_and_add_to_index("link3")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(0, meck:num_calls(epax_repo, clone_app, ["link3"])),
-        Result_apps = [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                        44,
-                        [123,["app1",44,"\"link1\"",44,"[]"],125],
-                        44,
-                        [123,["app2",44,"\"link2\"",44,"[]"],125]],
+        Result_apps = [[91,
+                        [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                         44,10," ",
+                         [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                         44,10," ",
+                         [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
                         93],
                        46,10],
         ?assertEqual(0, meck:num_calls(file, write_file, ["index.cfg", Result_apps])),
@@ -170,19 +174,20 @@ checkout_repo_and_add_to_index_test_() ->
     {"test for checkout_repo_and_add_to_index",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
         meck:expect(epax_repo, clone_app, fun("link3") -> {error, "error"} end),
         
         ?assertEqual({error, "error"}, epax_index:checkout_repo_and_add_to_index("link3")),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(epax_repo, clone_app, ["link3"])),
-        Result_apps = [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                        44,
-                        [123,["app1",44,"\"link1\"",44,"[]"],125],
-                        44,
-                        [123,["app2",44,"\"link2\"",44,"[]"],125]],
+        Result_apps = [[91,
+                        [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                         44,10," ",
+                         [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                         44,10," ",
+                         [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
                         93],
                        46,10],
         ?assertEqual(0, meck:num_calls(file, write_file, ["index.cfg", Result_apps])),
@@ -191,27 +196,29 @@ checkout_repo_and_add_to_index_test_() ->
     {"test for checkout_repo_and_add_to_index when index file cannot be written",
         fun() ->
             meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-            meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                                  {app2, "link2", []}]]} end),
-            meck:expect(epax_repo, clone_app, fun("link3") -> {ok, {app3, "link3", []}} end),
-            meck:expect(file, write_file, fun("index.cfg", [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                                                                 44,
-                                                                 [123,["app1",44,"\"link1\"",44,"[]"],125],
-                                                                 44,
-                                                                 [123,["app2",44,"\"link2\"",44,"[]"],125]],
-                                                                 93],
-                                                                46,10]) -> {error, "error"} end),
+            meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                                  #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
+            meck:expect(epax_repo, clone_app, fun("link3") -> {ok, #application{name=app3, repo_link="link3", repo_type=git, details=[]}} end),
+            meck:expect(file, write_file, fun("index.cfg", [[91,
+                                                             [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                                                              44,10," ",
+                                                              [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                                                              44,10," ",
+                                                              [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
+                                                             93],
+                                                            46,10]) -> {error, "error"} end),
             meck:expect(epax_os, rmdir, fun("packages/app3") -> ok end),
 
             ?assertEqual({error, "error"}, epax_index:checkout_repo_and_add_to_index("link3")),
             ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
             ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
             ?assertEqual(1, meck:num_calls(epax_repo, clone_app, ["link3"])),
-            Result_apps = [[91,[[123,["app3",44,"\"link3\"",44,"[]"],125],
-                            44,
-                            [123,["app1",44,"\"link1\"",44,"[]"],125],
-                            44,
-                            [123,["app2",44,"\"link2\"",44,"[]"],125]],
+            Result_apps = [[91,
+                            [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,"[]"],125],
+                             44,10," ",
+                             [123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                             44,10," ",
+                             [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125]],
                             93],
                            46,10],
             ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", Result_apps])),
@@ -225,8 +232,8 @@ remove_from_index_test_() ->
     [{"test for remove_from_index",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
         meck:expect(epax_os, rmdir, fun("packages/app2") -> ok end),
 
         ?assertEqual(ok, epax_index:remove_from_index(app2)),
@@ -240,7 +247,7 @@ remove_from_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax init` before running other epax commands"},
+        ?assertEqual({error, "run `epax init` before running other epax commands"},
                      epax_index:remove_from_index(app2)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(0, meck:num_calls(epax_os, get_abs_path, ["packages/app2"])),
@@ -255,8 +262,8 @@ get_applist_test_() ->
     [{"test for get_applist",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
 
         ?assertEqual({ok, [app1, app2]}, epax_index:get_applist()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
@@ -267,7 +274,7 @@ get_applist_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax init` before running other epax commands"},
+        ?assertEqual({error, "run `epax init` before running other epax commands"},
                      epax_index:get_applist()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -280,27 +287,29 @@ check_index_test_() ->
     [{"test for check index",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []},
-                                                              {app3, "link3", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]},
+                                                              #application{name=app3, repo_link="link3", repo_type=git, details=[]}]]} end),
         meck:expect(file, list_dir, fun("packages") -> {ok, ["app1", "app2","app3", "app4", "temp"]} end),
-        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
-                                                    {ok, {app1, "link1", [{key, "value"}]}};
-                                               ({app2, "link2", []}) ->
-                                                    {ok, {app2, "link2", []}};
-                                               ({app3, "link3", []}) -> 
+        meck:expect(epax_repo, update_repo, fun(#application{name=app1, repo_link="link1", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app1, repo_link="link1", repo_type=git, details=[{key, "value"}]}};
+                                               (#application{name=app2, repo_link="link2", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app2, repo_link="link2", repo_type=git, details=[]}};
+                                               (#application{name=app3, repo_link="link3", repo_type=git, details=[]}) -> 
                                                     {error, "error"} end),
         meck:expect(io, format, fun(" => ~p checked and updated!~n", [app1]) ->
                                         ok;
+                                   (" => ~p checked and updated!~n", [app3]) ->
+                                        ok;
                                    (" => ~p checked and updated!~n", [app2]) ->
                                         ok end),
-        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, {app3, "link3", [{k, "v"}]}} end),
+        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, #application{name=app3, repo_link="link3", repo_type=git, details=[{k, "v"}]}} end),
         meck:expect(file, write_file, fun("index.cfg", [[91,
-                                                         [[123,["app3",44,"\"link3\"",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
-                                                          44,
-                                                          [123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                          44,
-                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                          93],
                                                         46,10]) -> ok end),
         meck:expect(epax_os, rmdir, fun("packages/app3") -> ok;
@@ -310,18 +319,19 @@ check_index_test_() ->
         ?assertEqual(ok, epax_index:check_index()),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages"])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app1, "link1", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app2, "link2", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app3, "link3", []}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app1, repo_link="link1", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app2, repo_link="link2", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app3, repo_link="link3", repo_type=git, details=[]}])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app1]])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app2]])),
+        ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app3]])),
         ?assertEqual(1, meck:num_calls(epax_repo, clone_app, ["link3"])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app3",44,"\"link3\"",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
-                                                                          44,
-                                                                          [123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                                          44,
-                                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]])),
         ?assertEqual(1, meck:num_calls(epax_os, rmdir, ["packages/app3"])),
@@ -331,27 +341,29 @@ check_index_test_() ->
     {"test for check index when writing to index file fails",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []},
-                                                              {app3, "link3", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]},
+                                                              #application{name=app3, repo_link="link3", repo_type=git, details=[]}]]} end),
         meck:expect(file, list_dir, fun("packages") -> {ok, ["app1", "app2","app3", "app4", "temp"]} end),
-        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
-                                                    {ok, {app1, "link1", [{key, "value"}]}};
-                                               ({app2, "link2", []}) ->
-                                                    {ok, {app2, "link2", []}};
-                                               ({app3, "link3", []}) -> 
+        meck:expect(epax_repo, update_repo, fun(#application{name=app1, repo_link="link1", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app1, repo_link="link1", repo_type=git, details=[{key, "value"}]}};
+                                               (#application{name=app2, repo_link="link2", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app2, repo_link="link2", repo_type=git, details=[]}};
+                                               (#application{name=app3, repo_link="link3", repo_type=git, details=[]}) -> 
                                                     {error, "error"} end),
         meck:expect(io, format, fun(" => ~p checked and updated!~n", [app1]) ->
                                         ok;
+                                   (" => ~p checked and updated!~n", [app3]) ->
+                                        ok;
                                    (" => ~p checked and updated!~n", [app2]) ->
                                         ok end),
-        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, {app3, "link3", [{k, "v"}]}} end),
+        meck:expect(epax_repo, clone_app, fun("link3") -> {ok, #application{name=app3, repo_link="link3", repo_type=git, details=[{k, "v"}]}} end),
         meck:expect(file, write_file, fun("index.cfg", [[91,
-                                                         [[123,["app3",44,"\"link3\"",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
-                                                          44,
-                                                          [123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                          44,
-                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                          93],
                                                         46,10]) -> {error, "error"} end),
         meck:expect(epax_os, rmdir, fun("packages/app3") -> ok end),
@@ -359,18 +371,19 @@ check_index_test_() ->
         ?assertEqual({error, "error"}, epax_index:check_index()),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages"])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app1, "link1", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app2, "link2", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app3, "link3", []}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app1, repo_link="link1", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app2, repo_link="link2", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app3, repo_link="link3", repo_type=git, details=[]}])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app1]])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app2]])),
+        ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app3]])),
         ?assertEqual(1, meck:num_calls(epax_repo, clone_app, ["link3"])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app3",44,"\"link3\"",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
-                                                                          44,
-                                                                          [123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                                          44,
-                                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]])),
         ?assertEqual(1, meck:num_calls(epax_os, rmdir, ["packages/app3"])),
@@ -380,26 +393,26 @@ check_index_test_() ->
     {"test for check index when deleting the dir fails",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []},
-                                                              {app3, "link3", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]},
+                                                              #application{name=app3, repo_link="link3", repo_type=git, details=[]}]]} end),
         meck:expect(file, list_dir, fun("packages") -> {ok, ["app1", "app2","app3", "app4", "temp"]} end),
-        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
-                                                    {ok, {app1, "link1", [{key, "value"}]}};
-                                               ({app2, "link2", []}) ->
-                                                    {ok, {app2, "link2", []}};
-                                               ({app3, "link3", []}) -> 
+        meck:expect(epax_repo, update_repo, fun(#application{name=app1, repo_link="link1", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app1, repo_link="link1", repo_type=git, details=[{key, "value"}]}};
+                                               (#application{name=app2, repo_link="link2", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app2, repo_link="link2", repo_type=git, details=[]}};
+                                               (#application{name=app3, repo_link="link3", repo_type=git, details=[]}) -> 
                                                     {error, "error"} end),
         meck:expect(io, format, fun(" => ~p checked and updated!~n", [app1]) ->
                                         ok;
-                                   ("  ** ~p: unable to fix, because ~p~n", [app3,"error"]) ->
+                                   (" ** ~p: unable to fix, because ~p~n", [app3, "error"]) ->
                                         ok;
                                    (" => ~p checked and updated!~n", [app2]) ->
                                         ok end),
         meck:expect(file, write_file, fun("index.cfg", [[91,
-                                                         [[123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                          44,
-                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                         [[123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                          93],
                                                         46,10]) -> ok end),
         meck:expect(epax_os, rmdir, fun("packages/app3") -> throw("error");
@@ -409,24 +422,26 @@ check_index_test_() ->
         ?assertEqual(ok, epax_index:check_index()),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages"])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app1, "link1", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app2, "link2", []}])),
-        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [{app3, "link3", []}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app1, repo_link="link1", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app2, repo_link="link2", repo_type=git, details=[]}])),
+        ?assertEqual(1, meck:num_calls(epax_repo, update_repo, [#application{name=app3, repo_link="link3", repo_type=git, details=[]}])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app1]])),
         ?assertEqual(1, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app2]])),
+        ?assertEqual(1, meck:num_calls(io, format, [" ** ~p: unable to fix, because ~p~n", [app3,"error"]])),
+        ?assertEqual(0, meck:num_calls(io, format, [" => ~p checked and updated!~n", [app3]])),
         ?assertEqual(0, meck:num_calls(epax_repo, clone_app, ["link3"])),
         ?assertEqual(0, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app3",44,"\"link3\"",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
-                                                                          44,
-                                                                          [123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                                          44,
-                                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app3",44,"\"link3\"",44,"git",44,[91,[[123,["k",44,"\"v\""],125]],93]],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app2",44,"\"link2\"",44,"[]"],125],
-                                                                          44,
-                                                                          [123,["app1",44,"\"link1\"",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app2",44,"\"link2\"",44,"git",44,"[]"],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["key",44,"\"value\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]])),
         ?assertEqual(1, meck:num_calls(epax_os, rmdir, ["packages/app3"])),
@@ -453,7 +468,7 @@ update_index_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(file, consult, fun("index.cfg") -> {error, "error"} end),
 
-        ?assertEqual({error, "please run `epax init` before running other epax commands"},
+        ?assertEqual({error, "run `epax init` before running other epax commands"},
                      epax_index:update_index()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"]))
@@ -461,52 +476,52 @@ update_index_test_() ->
     {"test for update_index",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
         meck:expect(file, write_file, fun("index.cfg", [[91,
-                                                         [[123,["app1",44,"\"link1\"",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
-                                                          44,
-                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                         [[123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
                                                          93],
                                                         46,10]) -> ok end),
-        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
-                                                    {ok, {app1, "link1", [{detail1, "detail1"}]}};
-                                               ({app2, "link2", []}) ->
-                                                    {ok, {app2, "link2", [{detail2, "detail2"}]}} end),
+        meck:expect(epax_repo, update_repo, fun(#application{name=app1, repo_link="link1", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app1, repo_link="link1", repo_type=git, details=[{detail1, "detail1"}]}};
+                                               (#application{name=app2, repo_link="link2", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app2, repo_link="link2", repo_type=git, details=[{detail2, "detail2"}]}} end),
 
         ?assertEqual(ok ,epax_index:update_index()),
         ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app1",44,"\"link1\"",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
-                                                                          44,
-                                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app1",44,"\"link1\"",44,"git",44,[91,[[123,["detail1",44,"\"detail1\""],125]],93]],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]]))
     end},
     {"test for update_index when app1 cannot be updated",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        meck:expect(file, consult, fun("index.cfg") -> {ok, [[{app1, "link1", []},
-                                                              {app2, "link2", []}]]} end),
+        meck:expect(file, consult, fun("index.cfg") -> {ok, [[#application{name=app1, repo_link="link1", repo_type=git, details=[]},
+                                                              #application{name=app2, repo_link="link2", repo_type=git, details=[]}]]} end),
         meck:expect(file, write_file, fun("index.cfg", [[91,
-                                                         [[123,["app1",44,"\"link1\"",44,"[]"],125],
-                                                          44,
-                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                         [[123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                                                          44,10," ",
+                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
                                                          93],
                                                         46,10]) -> ok end),
-        meck:expect(epax_repo, update_repo, fun({app1, "link1", []}) ->
+        meck:expect(epax_repo, update_repo, fun(#application{name=app1, repo_link="link1", repo_type=git, details=[]}) ->
                                                     {error, "error"};
-                                               ({app2, "link2", []}) ->
-                                                    {ok, {app2, "link2", [{detail2, "detail2"}]}} end),
+                                               (#application{name=app2, repo_link="link2", repo_type=git, details=[]}) ->
+                                                    {ok, #application{name=app2, repo_link="link2", repo_type=git, details=[{detail2, "detail2"}]}} end),
 
         ?assertEqual(ok ,epax_index:update_index()),
         ?assertEqual(2, meck:num_calls(epax_os, get_abs_path, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, consult, ["index.cfg"])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["index.cfg", [[91,
-                                                                         [[123,["app1",44,"\"link1\"",44,"[]"],125],
-                                                                          44,
-                                                                          [123,["app2",44,"\"link2\"",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
+                                                                         [[123,["application",44,"app1",44,"\"link1\"",44,"git",44,"[]"],125],
+                                                                          44,10," ",
+                                                                          [123,["application",44,"app2",44,"\"link2\"",44,"git",44,[91,[[123,["detail2",44,"\"detail2\""],125]],93]],125]],
                                                                          93],
                                                                         46,10]]))
     end}]}.

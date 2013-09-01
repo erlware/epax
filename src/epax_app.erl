@@ -81,7 +81,7 @@ remove_app(Appname) ->
 
 %% list_apps/0
 %% ====================================================================
-%% @doc prints the app list stored in the index (in alphabetical order)
+%% @doc prints the app list stored in the index (in lexicographical order)
 -spec list_apps() -> ok.
 %% ====================================================================
 list_apps() ->
