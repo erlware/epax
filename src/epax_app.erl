@@ -21,7 +21,7 @@
 -module(epax_app).
 -include("epax.hrl").
 -export([init/0,
-         add_app/1,
+         add_app/2,
          remove_app/1,
          list_apps/0,
          update/0,
@@ -44,16 +44,17 @@ init() ->
     epax_index:init(),
     ?SUCCESS("epax successfully initialized").
 
-%% add_app/1
+%% add_app/2
 %% ====================================================================
 %% @doc adds OTP application stored at Link (only supports git)
--spec add_app(Link) -> ok when
-    Link :: string().
+-spec add_app(Link, Options) -> ok when
+    Link    :: string(),
+    Options :: [term()].
 %% ====================================================================
-add_app(Link) ->
+add_app(Link, Options) ->
     case epax_index:app_exists(Link) of
         {ok, false} ->
-            case epax_index:checkout_repo_and_add_to_index(Link) of
+            case epax_index:checkout_repo_and_add_to_index(Link, Options) of
                 {ok, Appname} ->
                     ?SUCCESS("added ~s to index", [Appname]);
                 {error, Reason} ->

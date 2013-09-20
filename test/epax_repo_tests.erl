@@ -43,7 +43,7 @@ clone_app_test_() ->
         ?assertEqual({ok, #application{name=app1, repo_link="link.svn", repo_type=svn, details=[{description, "description"},
                                                                                                {publisher, "author"},
                                                                                                {max_rev, 324}]}},
-                      epax_repo:clone_app("link.svn")),
+                      epax_repo:clone_app("link.svn", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["", "svn checkout link.svn packages/temp"])),
@@ -68,7 +68,7 @@ clone_app_test_() ->
         ?assertEqual({ok, #application{name=app1, repo_link="lp:link", repo_type=bzr, details=[{description, "description"},
                                                                                                {publisher, "author"},
                                                                                                {max_rev, 248}]}},
-                      epax_repo:clone_app("lp:link")),
+                      epax_repo:clone_app("lp:link", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["", "bzr branch lp:link packages/temp"])),
@@ -96,7 +96,7 @@ clone_app_test_() ->
                                                                                             {publisher, "author"},
                                                                                             {tags, ["v0.4.0","v0.3.0","v0.2.0"]},
                                                                                             {branches, ["master","dev"]}]}},
-                      epax_repo:clone_app(".git")),
+                      epax_repo:clone_app(".git", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "git tag"])),
@@ -111,7 +111,7 @@ clone_app_test_() ->
         meck:expect(epax_os, run_in_dir, fun("", "git clone .git packages/temp") -> ok end),
         meck:expect(epax_os, rmdir, fun("packages/temp") -> ok end),
 
-        ?assertEqual({error, "error"}, epax_repo:clone_app(".git")),
+        ?assertEqual({error, "error"}, epax_repo:clone_app(".git", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
         ?assertEqual(0, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "git tag"])),
@@ -124,14 +124,14 @@ clone_app_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(epax_os, run_in_dir, fun("", "git clone .git packages/temp") -> ok end),
         meck:expect(filelib, is_dir, fun("packages/temp") -> false end), 
-        ?assertEqual({error, "unable to download repo"}, epax_repo:clone_app(".git")),
+        ?assertEqual({error, "unable to download repo"}, epax_repo:clone_app(".git", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"]))
     end},
     {"test for clone_app function when type of repo cannot be determined",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         ?assertEqual({error, "unknown type of repo, use -r option to specify type of repo"},
-                      epax_repo:clone_app("link")),
+                      epax_repo:clone_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"]))
     end}]}.
 
@@ -294,13 +294,5 @@ update_repo_test_() ->
 
         App = #application{name=app1, repo_link=".git", repo_type=git, details=[]},
         ?assertEqual({error, "error"}, epax_repo:update_repo(App)),
-        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"]))
-    end},
-    {"test for update_repo function when type of repo not determined",
-    fun() ->    
-        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        App = #application{name=app1, repo_link="link", repo_type=git, details=[]},
-        ?assertEqual({error, "unknown type of repo, use -r option to specify type of repo"},
-                      epax_repo:update_repo(App)),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/app1"]))
     end}]}.

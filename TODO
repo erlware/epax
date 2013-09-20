@@ -1,6 +1,5 @@
 issues and todo list (in order)
 ###############################
-configuration option(include any already existing package, or to ignore, repo type)
 doesn't work for same application different publisher
 show details on terminal of the activity going on currently [how can I do this?]
 auto complete command
@@ -17,13 +16,13 @@ example command set
 ./epax add https://github.com/erlware/erlcron.git
 ./epax add https://github.com/erlware/relcool.git
 ./epax add https://github.com/erlware/erlmarkdown.git
-./epax add https://github.com/erlware/rebar_vsn_plugin.git
+./epax add -r git https://github.com/erlware/rebar_vsn_plugin.git
 ./epax add https://github.com/erlware/rebar_relx_plugin.git
 ./epax add https://github.com/erlware/dikdik.git
 ./epax add https://github.com/erlware/erlware_commons.git
 ./epax add https://github.com/basho/riak_kv.git
 ./epax add https://github.com/boundary/folsom.git
-./epax add https://github.com/esl/jobs.git
+./epax add -r git https://github.com/esl/jobs.git
 ./epax add https://github.com/esl/gproc.git
 ./epax add https://github.com/jcomellas/getopt.git
 ./epax add https://github.com/basho/lager.git

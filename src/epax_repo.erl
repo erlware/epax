@@ -21,7 +21,7 @@
 %%% external repository
 -module(epax_repo).
 -include("epax.hrl").
--export([clone_app/1,
+-export([clone_app/2,
          update_repo/1]).
 
 
@@ -29,11 +29,12 @@
 %% API
 %%============================================================================
 
-%% clone_app/1
+%% clone_app/2
 %% ====================================================================
 %% @doc downloads the repository, returns index entry
--spec clone_app(Link) -> Result when
+-spec clone_app(Link, Options) -> Result when
     Link        :: string(),
+    Options     :: [term()],
     Result      :: {ok, Index_entry}
                  | {error, Reason},
     Index_entry :: {application, Appname, Link, Repo_type, [{Key, Value}]},
@@ -44,9 +45,9 @@
     Appname     :: atom(),
     Reason      :: term().
 %% ====================================================================
-clone_app(Link) ->
+clone_app(Link, Options) ->
     Path = epax_os:get_abs_path(filename:join("packages", "temp")),
-    case type_of_repo(Link) of
+    case type_of_repo(Link, Options) of
         {ok, Repo_type} ->
             download_repo(Repo_type, Link, Path),
             case filelib:is_dir(Path) of
@@ -76,31 +77,32 @@ clone_app(Link) ->
 %% ====================================================================
 update_repo(App) ->
     Path = epax_os:get_abs_path(filename:join("packages", App#application.name)),
-    case update_files(App#application.repo_link, Path) of
-        {error, _} = E ->
-            E;
-        _ ->
-            get_app_info(App#application.repo_type, App#application.repo_link, Path)
-    end.
+    update_files(Path, App#application.repo_type),
+    get_app_info(App#application.repo_type, App#application.repo_link, Path).
 
 
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
 
-type_of_repo(Link) ->
-    Git_test = string:str(Link, ".git") =/= 0,
-    Bzr_test = (string:str(Link, "lp:") =/= 0) or (string:str(Link, "launchpad") =/= 0),
-    Svn_test = string:str(Link, ".svn") =/= 0,
-    if
-        Git_test ->
-            {ok, git};
-        Bzr_test ->
-            {ok, bzr};
-        Svn_test ->
-            {ok, svn};
-        true ->
-            {error, "unknown type of repo, use -r option to specify type of repo"}
+type_of_repo(Link, Options) ->
+    case proplists:get_value(repo_type, Options) of
+        undefined ->
+            Git_test = string:str(Link, ".git") =/= 0,
+            Bzr_test = (string:str(Link, "lp:") =/= 0) or (string:str(Link, "launchpad") =/= 0),
+            Svn_test = string:str(Link, ".svn") =/= 0,
+            if
+                Git_test ->
+                    {ok, git};
+                Bzr_test ->
+                    {ok, bzr};
+                Svn_test ->
+                    {ok, svn};
+                true ->
+                    {error, "unknown type of repo, use -r option to specify type of repo"}
+            end;
+        Else ->
+            {ok, list_to_atom(Else)}
     end.
 
 download_repo(git, Link, Path) ->
@@ -209,14 +211,12 @@ find_max_rev(Rev_List) ->
         [],
         re:split(Rev_List, "[\n ]")).
 
-update_files(Link, Path) ->
-    case type_of_repo(Link) of
-        {ok, git} ->
+update_files(Path, Repo_type) ->
+    case Repo_type of
+        git ->
             epax_os:run_in_dir(Path, "git pull");
-        {ok, bzr} ->
+        bzr ->
             epax_os:run_in_dir(Path, "bzr update");
-        {ok, svn} ->
-            epax_os:run_in_dir(Path, "svn update");
-        {error, _} = E ->
-            E
+        svn ->
+            epax_os:run_in_dir(Path, "svn update")
     end.

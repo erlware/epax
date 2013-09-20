@@ -33,8 +33,23 @@ main([]) ->
     print_help();
 main(["init"]) ->
     epax_app:init();
-main(["add"|[Link]]) ->
-    epax_app:add_app(Link);
+main(["add"|Args]) ->
+    OptSpecList = option_spec_list_for_add(),
+    case getopt:parse(OptSpecList, Args) of
+        {ok, {[help], []}} ->
+            print_help_for_add();
+        {ok, {_, []}} ->
+            ?CONSOLE("** invalid command (repo_link not found)!~n~n", []),
+            print_help_for_add();
+        {ok, {Options, [Link]}} ->
+            epax_app:add_app(Link, Options);
+        {ok, {_, NonOptArgs}} ->
+            ?CONSOLE("** invalid non option arguments: ~p~n~n", [NonOptArgs]),
+            print_help_for_add();
+        {error, {Reason, Data}} ->
+            ?CONSOLE("** error: ~s ~p~n", [Reason, Data]),
+            print_help_for_add()
+    end;
 main(["list"]) ->
     epax_app:list_apps();
 main(["remove"|[Appname]]) ->
@@ -51,7 +66,7 @@ main(Args) ->
         {ok, {Options, []}} ->
             handle_options(Options);
         {ok, {_, NonOptArgs}} ->
-            ?CONSOLE("** invalid command: ~p~n~n", [NonOptArgs]),
+            ?CONSOLE("** invalid non option arguments: ~p~n~n", [NonOptArgs]),
             print_help();
         {error, {Reason, Data}} ->
             ?CONSOLE("** error: ~s ~p~n", [Reason, Data]),
@@ -102,3 +117,14 @@ print_version() ->
     Version_Message = << <<"epax (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
 ">>/binary >>,
     io:put_chars(Version_Message).
+
+% help subcommand add
+option_spec_list_for_add() ->
+    [
+     %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
+     {help,        $h,        "help",        undefined,             "Show the program options"},
+     {repo_type,   $r,        "repo",        string,                "Specify type of repository (git, bzr, svn)"}
+    ].
+
+print_help_for_add() ->
+    getopt:usage(option_spec_list_for_add(), ?EPAX).

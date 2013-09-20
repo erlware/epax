@@ -37,9 +37,9 @@ main_test_() ->
     end},
     {"test for add app command",
     fun() ->
-        meck:expect(epax_app, add_app, fun("link") -> ok end),
+        meck:expect(epax_app, add_app, fun("link", []) -> ok end),
         ?assertEqual(ok, epax:main(["add", "link"])),
-        ?assertEqual(1, meck:num_calls(epax_app, add_app, ["link"])),
+        ?assertEqual(1, meck:num_calls(epax_app, add_app, ["link", []])),
         ?assert(meck:validate(epax_app))
     end},
     {"test for list command",
@@ -81,11 +81,11 @@ main_test_() ->
     fun() ->
         meck:expect(getopt, parse, fun([{help,        $h,        "help",        undefined,             "Show the program options"},
                                         {version,     $v,        "version",     undefined,             "Show the current version"}],
-                                       "invalid") -> {ok, {[], ["invalid"]}} end),
-        meck:expect(io, format, fun("** invalid command: ~p~n~n", [["invalid"]]) -> ok end),
-        ?assertEqual(ok, epax:main("invalid")),
+                                       ["invalid"]) -> {ok, {[], ["invalid"]}} end),
+        meck:expect(io, format, fun("** invalid non option arguments: ~p~n~n", [["invalid"]]) -> ok end),
+        ?assertEqual(ok, epax:main(["invalid"])),
         ?assertEqual(1, meck:num_calls(getopt, parse, [[{help,        $h,        "help",        undefined,             "Show the program options"},
                                                         {version,     $v,        "version",     undefined,             "Show the current version"}],
-                                                       "invalid"])),
-        ?assertEqual(1, meck:num_calls(io, format, ["** invalid command: ~p~n~n", [["invalid"]]]))
+                                                       ["invalid"]])),
+        ?assertEqual(1, meck:num_calls(io, format, ["** invalid non option arguments: ~p~n~n", [["invalid"]]]))
     end}]}.

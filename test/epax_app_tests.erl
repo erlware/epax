@@ -55,28 +55,28 @@ add_app_test_() ->
     [{"test add_app",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, false} end),
-        meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link") -> {ok, appname} end),
+        meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link", []) -> {ok, appname} end),
         meck:expect(epax_com, print_success, fun("added appname to index") -> ok end),
-        ?assertEqual(ok, epax_app:add_app("link")),
+        ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
-        ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link"])),
+        ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link", []])),
         ?assertEqual(1, meck:num_calls(epax_com, print_success, ["added appname to index"]))
     end},
     {"test add_app while error",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, false} end),
-        meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link") -> {error, "error"} end),
+        meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link", []) -> {error, "error"} end),
         meck:expect(epax_com, print_error, fun("error", "unable to add to index") -> ok end),
-        ?assertEqual(ok, epax_app:add_app("link")),
+        ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
-        ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link"])),
+        ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link", []])),
         ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to add to index"]))
     end},
     {"test add_app when app already exists",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, appname} end),
         meck:expect(epax_com, print_error, fun(already_added, "appname is already added") -> ok end),
-        ?assertEqual(ok, epax_app:add_app("link")),
+        ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
         ?assertEqual(1, meck:num_calls(epax_com, print_error, [already_added, "appname is already added"])),
         ?assertNot(meck:called(epax_index, checkout_repo_and_add_to_index, ["link"]))
@@ -85,7 +85,7 @@ add_app_test_() ->
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {error, "error"} end),
         meck:expect(epax_com, print_error, fun("error", "unable to add to index") -> ok end),
-        ?assertEqual(ok, epax_app:add_app("link")),
+        ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
         ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to add to index"])),
         ?assertNot(meck:called(epax_index, checkout_repo_and_add_to_index, ["link"]))

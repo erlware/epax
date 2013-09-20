@@ -22,7 +22,7 @@
 -include("epax.hrl").
 -export([init/0,
 		 app_exists/1,
-		 checkout_repo_and_add_to_index/1,
+		 checkout_repo_and_add_to_index/2,
          remove_from_index/1,
          get_applist/0,
          update_index/0,
@@ -68,21 +68,22 @@ app_exists(Info) ->
             {error, "run `epax init` before running other epax commands"}
     end.
 
-%% checkout_repo_and_add_to_index/1
+%% checkout_repo_and_add_to_index/2
 %% ====================================================================
 %% @doc downloads the repo in the packages folder and adds details to
 %% index
--spec checkout_repo_and_add_to_index(Link) -> Result when
+-spec checkout_repo_and_add_to_index(Link, Options) -> Result when
     Link    :: string(),
+    Options :: [term()],
     Result  :: {ok, App}
              | {error, Reason},
     App  :: atom(),
     Reason  :: term().
 %% ====================================================================
-checkout_repo_and_add_to_index(Link) ->
+checkout_repo_and_add_to_index(Link, Options) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            clone_app(Link, Existing_apps);
+            clone_app(Link, Existing_apps, Options);
         {error, _} ->
             {error, "run `epax init` before running other epax commands"}
     end.
@@ -173,8 +174,8 @@ check_index() ->
 write_to_index_file(Data) ->
     file:write_file(epax_os:get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
 
-clone_app(Link, Existing_apps) ->
-    case epax_repo:clone_app(Link) of
+clone_app(Link, Existing_apps, Options) ->
+    case epax_repo:clone_app(Link, Options) of
         {ok, Newapp_details} ->
             case write_to_index_file([Newapp_details|Existing_apps]) of
                 ok ->
@@ -245,7 +246,8 @@ try_cloning_again(App_info) ->
     Path = epax_os:get_abs_path(filename:join("packages", App_info#application.name)),
     case (catch epax_os:rmdir(Path)) of
         ok ->
-            epax_repo:clone_app(App_info#application.repo_link);
+            epax_repo:clone_app(App_info#application.repo_link,
+                                [{repo_type, App_info#application.repo_type}]);
         E ->
             {error, E}
     end.
