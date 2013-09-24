@@ -100,7 +100,7 @@ checkout_repo_and_add_to_index(Link, Options) ->
 remove_from_index(Appname) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
         {ok, [Existing_apps]} ->
-            Path = filename:join("packages", Appname),
+            Path = filename:join("packages", atom_to_list(Appname)),
             epax_os:rmdir(epax_os:get_abs_path(Path)),
             write_to_index_file(lists:keydelete(Appname, #application.name, Existing_apps));
         {error, _} ->
@@ -243,7 +243,7 @@ fix_package_if(App_info, Apps, Pkgs) ->
     end.
 
 try_cloning_again(App_info) ->
-    Path = epax_os:get_abs_path(filename:join("packages", App_info#application.name)),
+    Path = epax_os:get_abs_path(filename:join("packages", atom_to_list(App_info#application.name))),
     case (catch epax_os:rmdir(Path)) of
         ok ->
             epax_repo:clone_app(App_info#application.repo_link,

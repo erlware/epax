@@ -76,7 +76,7 @@ clone_app(Link, Options) ->
     Reason      :: term().
 %% ====================================================================
 update_repo(App) ->
-    Path = epax_os:get_abs_path(filename:join("packages", App#application.name)),
+    Path = epax_os:get_abs_path(filename:join("packages", atom_to_list(App#application.name))),
     update_files(Path, App#application.repo_type),
     get_app_info(App#application.repo_type, App#application.repo_link, Path).
 

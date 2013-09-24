@@ -74,7 +74,7 @@ print_success(Message) ->
 get_appfile_content(Info) ->
     Base_folder = case is_atom(Info) of
         true ->
-            filename:join(epax_os:get_abs_path("packages"), Info);
+            filename:join(epax_os:get_abs_path("packages"), atom_to_list(Info));
         false ->
             Info
     end,
