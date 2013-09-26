@@ -17,6 +17,8 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
+%%%
+
 -module(epax_dep_tests).
 -include_lib("eunit/include/eunit.hrl").
 
@@ -56,14 +58,25 @@ bundle_test_() ->
         end),
         
         % mocking the call to get_appfile_content function
-        meck:expect(epax_com, get_appfile_content, fun
-            (a) -> {ok, [A_appfile_content]};
-            (b) -> {ok, [B_appfile_content]};
-            (c) -> {ok, [C_appfile_content]};
-            (d) -> {ok, [D_appfile_content]};
-            (e) -> {ok, [E_appfile_content]};
-            (f) -> {ok, [F_appfile_content]}
-        end),
+        meck:expect(epax_com, get_appfile_content,
+            fun
+                (a) -> {ok, [A_appfile_content]};
+                (b) -> {ok, [B_appfile_content]};
+                (c) -> {ok, [C_appfile_content]};
+                (d) -> {ok, [D_appfile_content]};
+                (e) -> {ok, [E_appfile_content]};
+                (f) -> {ok, [F_appfile_content]}
+            end),
+        meck:expect(epax_com, console, fun("Copying ~p~n", [f]) ->
+                                               ok;
+                                          ("Copying ~p~n", [e]) ->
+                                               ok;
+                                          ("Copying ~p~n", [d]) ->
+                                               ok;
+                                          ("Copying ~p~n", [c]) ->
+                                               ok;
+                                          ("Copying ~p~n", [b]) ->
+                                               ok end), 
 
         ?assertEqual(ok, epax_dep:bundle(a)),
 
@@ -88,7 +101,13 @@ bundle_test_() ->
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [c])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [d])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [e])),
-        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [f]))
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [f])),
+
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["Copying ~p~n", [f]])),
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["Copying ~p~n", [e]])),
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["Copying ~p~n", [d]])),
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["Copying ~p~n", [c]])),
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["Copying ~p~n", [b]]))
     end},
     {"test for bundle when some app is not already added",
     fun() ->
@@ -121,8 +140,9 @@ bundle_test_() ->
             (e) -> {ok, [E_appfile_content]};
             (f) -> {ok, [F_appfile_content]}
         end),
+        meck:expect(epax_com, format, fun("~s does not exist", [f]) -> "f does not exist" end),
 
-        ?assertEqual({error, "f is not found"}, epax_dep:bundle(a)),
+        ?assertEqual({error, "f does not exist"}, epax_dep:bundle(a)),
 
         % asserting call is made for app_exists function for each app
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, [a])),
@@ -138,7 +158,14 @@ bundle_test_() ->
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [c])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [d])),
         ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, [e])),
-        ?assertEqual(0, meck:num_calls(epax_com, get_appfile_content, [f]))
+        ?assertEqual(0, meck:num_calls(epax_com, get_appfile_content, [f])),
+
+        ?assertEqual(0, meck:num_calls(epax_com, console, ["Copying ~p~n", [f]])),
+        ?assertEqual(0, meck:num_calls(epax_com, console, ["Copying ~p~n", [e]])),
+        ?assertEqual(0, meck:num_calls(epax_com, console, ["Copying ~p~n", [d]])),
+        ?assertEqual(0, meck:num_calls(epax_com, console, ["Copying ~p~n", [c]])),
+        ?assertEqual(0, meck:num_calls(epax_com, console, ["Copying ~p~n", [b]])),
+        ?assertEqual(1, meck:num_calls(epax_com, format, ["~s does not exist", [f]]))
     end},
     {"test for bundle when app_exists returns error",
     fun() ->

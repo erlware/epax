@@ -17,13 +17,20 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
+%%%
+
 -module(epax_com_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 print_test() ->
-    ?assertEqual(ok, epax_com:print_error("")),
-    ?assertEqual(ok, epax_com:print_error("", "")),
-    ?assertEqual(ok, epax_com:print_success("")).
+    ?assertEqual("1, 2, 3", epax_com:format(["1, ", "2, ", "3"])),
+    ?assertEqual("1, 2, 3", epax_com:format("~p, ~p, ~p", [1, 2, 3])),
+    ?assertEqual(ok, epax_com:success("message")),
+    ?assertEqual(ok, epax_com:success("message and ~s", ["args"])),
+    ?assertEqual(ok, epax_com:error("reason", "conclusion")),
+    ?assertEqual(ok, epax_com:error("reason", "conclusion and ~s", ["args"])),
+    ?assertThrow(reason, epax_com:abort(reason, "conclusion")),
+    ?assertThrow(reason, epax_com:abort(reason, "conclusion and ~s", ["args"])).
 
 get_appfile_content_test_() ->
     {foreach,
@@ -82,7 +89,7 @@ get_appfile_content_test_() ->
             ("packages/appname/src") ->
                 {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src"]} end),
 
-        ?assertEqual({error, "app or app.src file not found"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, ".app or .app.src file not found"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
@@ -104,7 +111,7 @@ get_appfile_content_test_() ->
             ("packages/appname/src") ->
                 {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src"]} end),
 
-        ?assertEqual({error, "more than one .app file in ebin folder"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, "More than one .app file in ebin folder"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
@@ -126,7 +133,7 @@ get_appfile_content_test_() ->
                 {ok,["meck_expect.erl","meck_code_gen.erl", "meck_app.erl", "meck_app.src",
                     "meck.app.src", "meck_dup.app.src"]} end),
 
-        ?assertEqual({error, "more than one .app.src file in src folder"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, "More than one .app.src file in src folder"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),
@@ -146,7 +153,7 @@ get_appfile_content_test_() ->
             ("packages/appname/src") ->
                 {error, "error"} end),
 
-        ?assertEqual({error, "app or app.src file not found"}, epax_com:get_appfile_content(appname)),
+        ?assertEqual({error, ".app or .app.src file not found"}, epax_com:get_appfile_content(appname)),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/src/meck.app.src"])),
         ?assertEqual(0, meck:num_calls(file, consult, ["packages/appname/ebin/meck.app"])),
         ?assertEqual(1, meck:num_calls(file, list_dir, ["packages/appname/ebin"])),

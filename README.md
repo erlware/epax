@@ -1,26 +1,22 @@
 epax
 ====
-Erlang Package Manager
+Erlang Package Manager 1.0.0
 
 [![Build Status](https://travis-ci.org/mangalaman93/epax.png?branch=feature_basic_git)](https://travis-ci.org/mangalaman93/epax)
 
 Structure of index file
 -----------------------
-The index contains the information about the OTP App in the following format-
+The index contains the information about the OTP Application in the following format-
 
-    {app_name(), link_to_repo(), repo_type(), [info()]}
+    {Appname, LinkToRepo, RepoType, [Info]}
 
-    app_name()  :: atom(),
-    repo_link() :: url(),
-    repo_type() :: git | bzr | svn,
-    info()      :: {publisher, publisher()::string()}
-                 | {tags, [tag()]}
-                 | {branches, [branch()]}
-                 | {description, descrip()}
-    descrip()   :: string(),
-    branch()    :: string(),
-    tag()       :: string(),
-    revision()  :: integer().
+    Appname    :: atom(),
+    LinkToRepo :: url(),
+    RepoType   :: git | bzr | svn,
+    Info       :: {publisher, Publisher :: string()}
+                | {tags, [Tag :: string()]}
+                | {branches, [Branch :: string()]}
+                | {description, Description :: string()}
 
 
 BUILDING
@@ -29,7 +25,7 @@ To build epax and generate a standalone escript executable:
 
     $ make
 
-This creates the executable `epax`.
+This creates an executable `epax`.
 
 
 SYNOPSIS
@@ -46,6 +42,6 @@ COMMANDS
     add    <repo_link>  Add new package into index (repo must follow OTP structure)
     list                List down all packages in the index in lexicographical order
     remove <appname>    Remove the package from index
-    update              Update information about all packages added into the index
-    check               Fix broken packages if any, updates the index too
-    bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
+    update              Update details of all packages in the index
+    check               Try to fix broken packages if any, updates the index as well
+    bundle <appname>    Figure out dependencies for the package and copies all non-standard packages

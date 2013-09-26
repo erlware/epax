@@ -50,6 +50,31 @@ clone_app_test_() ->
         ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "svnversion"])),
         ?assertEqual(1, meck:num_calls(epax_os, mv_folder, ["packages/temp", "packages/app1"]))
     end},
+    {"test for clone_app function for svn when type of repo is passed in options",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(filelib, is_dir, fun("packages/temp") -> true end),
+        Appfile_content = {ok, [{application, app1, [{applications, [kernel, stdlib, sasl]},
+                                                     {included_applications, [b, c, d, ssl]},
+                                                     {author, "author"},
+                                                     {description, "description"}]}]},
+        meck:expect(epax_com, get_appfile_content, fun("packages/temp") -> Appfile_content end),
+        meck:expect(epax_os, run_in_dir, fun("", "svn checkout link.svn packages/temp") ->
+                                                ok;
+                                            ("packages/temp", "svnversion") ->
+                                                "324\n" end),
+        meck:expect(epax_os, mv_folder, fun("packages/temp", "packages/app1") -> ok end),
+
+        ?assertEqual({ok, #application{name=app1, repo_link="link.svn", repo_type=svn, details=[{description, "description"},
+                                                                                               {publisher, "author"},
+                                                                                               {max_rev, 324}]}},
+                      epax_repo:clone_app("link.svn", [{repo_type, "svn"}])),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_com, get_appfile_content, ["packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["", "svn checkout link.svn packages/temp"])),
+        ?assertEqual(1, meck:num_calls(epax_os, run_in_dir, ["packages/temp", "svnversion"])),
+        ?assertEqual(1, meck:num_calls(epax_os, mv_folder, ["packages/temp", "packages/app1"]))
+    end},
     {"test for clone_app function for bzr",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
@@ -124,13 +149,13 @@ clone_app_test_() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
         meck:expect(epax_os, run_in_dir, fun("", "git clone .git packages/temp") -> ok end),
         meck:expect(filelib, is_dir, fun("packages/temp") -> false end), 
-        ?assertEqual({error, "unable to download repo"}, epax_repo:clone_app(".git", [])),
+        ?assertEqual({error, "Unable to download repo"}, epax_repo:clone_app(".git", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"]))
     end},
     {"test for clone_app function when type of repo cannot be determined",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun(X) -> X end),
-        ?assertEqual({error, "unknown type of repo, use -r option to specify type of repo"},
+        ?assertEqual({error, "Unknown type of repo, use -r option to specify type of repo"},
                       epax_repo:clone_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["packages/temp"]))
     end}]}.

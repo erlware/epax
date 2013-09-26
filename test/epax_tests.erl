@@ -22,8 +22,8 @@
 
 main_test_() ->
     {foreach,
-    fun() -> meck:new([getopt, io, epax_app], [unstick, passthrough]) end,
-    fun(_) -> meck:unload([getopt, io, epax_app]) end,
+    fun() -> meck:new([getopt, epax_app, epax_com], [unstick, passthrough]) end,
+    fun(_) -> meck:unload([getopt, epax_app, epax_com]) end,
     [{"test for empty command",
     fun() ->
         ?assertEqual(ok, epax:main([]))
@@ -82,10 +82,10 @@ main_test_() ->
         meck:expect(getopt, parse, fun([{help,        $h,        "help",        undefined,             "Show the program options"},
                                         {version,     $v,        "version",     undefined,             "Show the current version"}],
                                        ["invalid"]) -> {ok, {[], ["invalid"]}} end),
-        meck:expect(io, format, fun("** invalid non option arguments: ~p~n~n", [["invalid"]]) -> ok end),
+        meck:expect(epax_com, console, fun("** Invalid non option arguments: ~p.~n~n", [["invalid"]]) -> ok end),
         ?assertEqual(ok, epax:main(["invalid"])),
         ?assertEqual(1, meck:num_calls(getopt, parse, [[{help,        $h,        "help",        undefined,             "Show the program options"},
                                                         {version,     $v,        "version",     undefined,             "Show the current version"}],
                                                        ["invalid"]])),
-        ?assertEqual(1, meck:num_calls(io, format, ["** invalid non option arguments: ~p~n~n", [["invalid"]]]))
+        ?assertEqual(1, meck:num_calls(epax_com, console, ["** Invalid non option arguments: ~p.~n~n", [["invalid"]]]))
     end}]}.

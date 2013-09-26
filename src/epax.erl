@@ -18,6 +18,8 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc main epax module
+%%%
+
 -module(epax).
 -include("epax.hrl").
 -export([main/1]).
@@ -39,15 +41,15 @@ main(["add"|Args]) ->
         {ok, {[help], []}} ->
             print_help_for_add();
         {ok, {_, []}} ->
-            ?CONSOLE("** invalid command (repo_link not found)!~n~n", []),
+            epax_com:console("** Invalid command (repo_link not found).~n~n", []),
             print_help_for_add();
         {ok, {Options, [Link]}} ->
             epax_app:add_app(Link, Options);
         {ok, {_, NonOptArgs}} ->
-            ?CONSOLE("** invalid non option arguments: ~p~n~n", [NonOptArgs]),
+            epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
             print_help_for_add();
         {error, {Reason, Data}} ->
-            ?CONSOLE("** error: ~s ~p~n", [Reason, Data]),
+            epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
             print_help_for_add()
     end;
 main(["list"]) ->
@@ -66,10 +68,10 @@ main(Args) ->
         {ok, {Options, []}} ->
             handle_options(Options);
         {ok, {_, NonOptArgs}} ->
-            ?CONSOLE("** invalid non option arguments: ~p~n~n", [NonOptArgs]),
+            epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
             print_help();
         {error, {Reason, Data}} ->
-            ?CONSOLE("** error: ~s ~p~n", [Reason, Data]),
+            epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
             print_help()
     end.
 
@@ -78,6 +80,7 @@ main(Args) ->
 %%% Internal Functions
 %%%===================================================================
 
+% main options
 option_spec_list() ->
     [
      %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
@@ -90,7 +93,7 @@ handle_options([help]) ->
 handle_options([version]) ->
     print_version();
 handle_options(Options) ->
-    ?CONSOLE("** invalid options: ~p~n", [Options]),
+    epax_com:console("** Invalid options: ~p.~n", [Options]),
     print_help().
 
 print_help() ->
@@ -102,9 +105,9 @@ Commands:
   add    <repo_link>  Add new package into index (repo must follow OTP structure)
   list                List down all packages in the index in lexicographical order
   remove <appname>    Remove the package from index
-  update              Update information about all packages added into the index
-  check               Try to fix broken packages if any, updates the index too
-  bundle <appname>    Figure out the dependencies for the application and copies all valid packages into deps folder
+  update              Update details of all packages in the index
+  check               Try to fix broken packages if any, updates the index as well
+  bundle <appname>    Figure out dependencies for the package and copies all non-standard packages
 
 Options:
   -h, --help          Show the commands and options (this message)
@@ -114,7 +117,7 @@ Options:
     io:put_chars(Help_Message).
 
 print_version() ->
-    Version_Message = << <<"epax (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
+    Version_Message = << <<?EPAX>>/binary, <<" (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
 ">>/binary >>,
     io:put_chars(Version_Message).
 

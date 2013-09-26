@@ -18,6 +18,8 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc provides an API to handle the index stored locally
+%%%
+
 -module(epax_index).
 -include("epax.hrl").
 -export([init/0,
@@ -51,8 +53,8 @@ init() ->
 %% false otherwise. Info can be either the link to the application or
 %% the name of the application
 -spec app_exists(Info) -> Result when
-    Info   :: string()
-            | atom(),
+    Info    :: string()
+             | atom(),
     Result  :: {ok, Status}
              | {error, Reason},
     Status  :: Appname
@@ -62,10 +64,10 @@ init() ->
 %% ====================================================================
 app_exists(Info) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
-            {ok, app_exists(Info, Existing_apps)};
+        {ok, [ExistingApps]} ->
+            {ok, app_exists(Info, ExistingApps)};
         {error, _} ->
-            {error, "run `epax init` before running other epax commands"}
+            {error, "Run `epax init` before running other epax commands"}
     end.
 
 %% checkout_repo_and_add_to_index/2
@@ -77,15 +79,15 @@ app_exists(Info) ->
     Options :: [term()],
     Result  :: {ok, App}
              | {error, Reason},
-    App  :: atom(),
+    App     :: atom(),
     Reason  :: term().
 %% ====================================================================
 checkout_repo_and_add_to_index(Link, Options) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
-            clone_app(Link, Existing_apps, Options);
+        {ok, [ExistingApps]} ->
+            clone_app(Link, ExistingApps, Options);
         {error, _} ->
-            {error, "run `epax init` before running other epax commands"}
+            {error, "Run `epax init` before running other epax commands"}
     end.
 
 %% remove_from_index/1
@@ -99,69 +101,71 @@ checkout_repo_and_add_to_index(Link, Options) ->
 %% ====================================================================
 remove_from_index(Appname) ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
+        {ok, [ExistingApps]} ->
             Path = filename:join("packages", atom_to_list(Appname)),
             epax_os:rmdir(epax_os:get_abs_path(Path)),
-            write_to_index_file(lists:keydelete(Appname, #application.name, Existing_apps));
+            write_to_index_file(lists:keydelete(Appname, #application.name, ExistingApps));
         {error, _} ->
-            {error, "run `epax init` before running other epax commands"}
+            {error, "Run `epax init` before running other epax commands"}
     end.
 
 %% get_applist/0
 %% ====================================================================
 %% @doc returns the list of applications added into the index
 -spec get_applist() -> Result when
-    Result   :: {ok, Allapps}
-              | {error, Reason},
-    Allapps :: [atom()],
-    Reason   :: term().
+    Result  :: {ok, AllApps}
+             | {error, Reason},
+    AllApps :: [atom()],
+    Reason  :: term().
 %% ====================================================================
 get_applist() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
-            Unsorted_apps = lists:map(fun(App) -> App#application.name end, Existing_apps),
-            {ok, lists:sort(Unsorted_apps)};
+        {ok, [ExistingApps]} ->
+            UnsortedApps = lists:map(fun(App) -> App#application.name end, ExistingApps),
+            {ok, lists:sort(UnsortedApps)};
         {error, _} ->
-            {error, "run `epax init` before running other epax commands"}
+            {error, "Run `epax init` before running other epax commands"}
     end.
 
 %% update_index/0
 %% ====================================================================
-%% @doc pulls any changes in the repo and updates the details of apps in index
+%% @doc pulls any changes in the repository and updates the details of
+%% applications in index
 -spec update_index() -> ok | {error, Reason} when
     Reason :: term().
 %% ====================================================================
 update_index() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
-            write_to_index_file(lists:reverse(
-                lists:foldl(fun(App, Acc) ->
+        {ok, [ExistingApps]} ->
+            write_to_index_file(lists:reverse(lists:foldl(
+                fun(App, Acc) ->
                     case epax_repo:update_repo(App) of
                         {ok, Newapp} ->
-                            ?CONSOLE(" => ~p updated!~n", [App#application.name]),
+                            epax_com:console(" => ~p updated~n", [App#application.name]),
                             [Newapp|Acc];
                         {error, Reason} ->
-                            ?CONSOLE(" ** ~p: unable to update, because ~p~n", [App#application.name, Reason]),
+                            epax_com:console(" ** ~p: unable to update, because ~p~n", [App#application.name, Reason]),
                             [App|Acc]
                     end
                 end,
                 [],
-                Existing_apps)));
+                ExistingApps)));
         {error, _} ->
-            {error, "run `epax init` before running other epax commands"}
+            {error, "Run `epax init` before running other epax commands"}
     end.
 
 %% check_index/0
 %% ====================================================================
 %% @doc assuming the index correct, verifies the downloaded packages,
-%% deletes rest of the folders
+%% deletes rest of the folders. If anything goes wrong, it initializes
+%% the index
 -spec check_index() -> ok | {error, Reason} when
     Reason :: term().
 %% ====================================================================
 check_index() ->
     case file:consult(epax_os:get_abs_path("index.cfg")) of
-        {ok, [Existing_apps]} ->
-            check_apps(Existing_apps);
+        {ok, [ExistingApps]} ->
+            check_apps(ExistingApps);
         {error, _} = E ->
             epax_app:init(),
             E
@@ -172,16 +176,16 @@ check_index() ->
 %%%===================================================================
 
 write_to_index_file(Data) ->
-    file:write_file(epax_os:get_abs_path("index.cfg"), io_lib:fwrite("~p.\n",[Data])).
+    file:write_file(epax_os:get_abs_path("index.cfg"), io_lib:fwrite("~p.\n", [Data])).
 
-clone_app(Link, Existing_apps, Options) ->
+clone_app(Link, ExistingApps, Options) ->
     case epax_repo:clone_app(Link, Options) of
-        {ok, Newapp_details} ->
-            case write_to_index_file([Newapp_details|Existing_apps]) of
+        {ok, NewappDetails} ->
+            case write_to_index_file([NewappDetails|ExistingApps]) of
                 ok ->
-                    {ok, Newapp_details#application.name};
+                    {ok, NewappDetails#application.name};
                 {error, _} = E ->
-                    Path = filename:join("packages", Newapp_details#application.name),
+                    Path = filename:join("packages", NewappDetails#application.name),
                     epax_os:rmdir(epax_os:get_abs_path(Path)),
                     E
              end;
@@ -189,15 +193,15 @@ clone_app(Link, Existing_apps, Options) ->
             E
     end.
 
-app_exists(Info, Existing_apps) when is_list(Info) ->
-    case lists:keyfind(Info, #application.repo_link, Existing_apps) of
+app_exists(Info, ExistingApps) when is_list(Info) ->
+    case lists:keyfind(Info, #application.repo_link, ExistingApps) of
         false ->
             false;
         App ->
             App#application.name
     end;
-app_exists(Info, Existing_apps) when is_atom(Info) ->
-    case lists:keyfind(Info, #application.name, Existing_apps) of
+app_exists(Info, ExistingApps) when is_atom(Info) ->
+    case lists:keyfind(Info, #application.name, ExistingApps) of
         false ->
             false;
         App ->
@@ -206,48 +210,47 @@ app_exists(Info, Existing_apps) when is_atom(Info) ->
 app_exists(_, _) ->
     false.
 
-check_apps(Existing_apps) ->
-    {ok, All_pkgs} = file:list_dir(epax_os:get_abs_path("packages")),
-    {Apps, Extra_dirs} = lists:foldl(fun(App_info, {Apps, Pkgs}) ->
-        fix_package_if(App_info, Apps, Pkgs)
-    end,
-    {[], All_pkgs},
-    Existing_apps),
+check_apps(ExistingApps) ->
+    {ok, AllPkgs} = file:list_dir(epax_os:get_abs_path("packages")),
+    {Apps, ExtraDirs} = lists:foldl(fun(AppInfo, {Apps, Pkgs}) ->
+            fix_package_if(AppInfo, Apps, Pkgs)
+        end,
+        {[], AllPkgs},
+        ExistingApps),
     case write_to_index_file(Apps) of
         ok ->
             lists:foreach(fun(Dir) ->
-                Path = epax_os:get_abs_path(filename:join("packages", Dir)),
-                epax_os:rmdir(Path)
-            end,
-            Extra_dirs);
+                    Path = epax_os:get_abs_path(filename:join("packages", Dir)),
+                    epax_os:rmdir(Path)
+                end,
+                ExtraDirs);
         {error, _} = E ->
             E
     end.
 
-fix_package_if(App_info, Apps, Pkgs) ->
-    App = App_info#application.name,
-    Rest_pkgs = lists:delete(atom_to_list(App), Pkgs),
-    case epax_repo:update_repo(App_info) of
-        {ok, New_app_info} ->
-            ?CONSOLE(" => ~p checked and updated!~n", [App]),
-            {[New_app_info|Apps], Rest_pkgs};
+fix_package_if(AppInfo, Apps, Pkgs) ->
+    App = AppInfo#application.name,
+    RestPkgs = lists:delete(atom_to_list(App), Pkgs),
+    case epax_repo:update_repo(AppInfo) of
+        {ok, NewAppInfo} ->
+            epax_com:console(" => ~p checked and updated~n", [App]),
+            {[NewAppInfo|Apps], RestPkgs};
         {error, _} ->
-            case try_cloning_again(App_info) of
-                {ok, New_app_info} ->
-                    ?CONSOLE(" => ~p checked and updated!~n", [New_app_info#application.name]),
-                    {[New_app_info|Apps], Rest_pkgs};
+            case try_cloning_again(AppInfo) of
+                {ok, NewAppInfo} ->
+                    epax_com:console(" => ~p checked and updated~n", [NewAppInfo#application.name]),
+                    {[NewAppInfo|Apps], RestPkgs};
                 {error, Reason} ->
-                    ?CONSOLE(" ** ~p: unable to fix, because ~p~n", [App, Reason]),
-                    {Apps, Rest_pkgs}
+                    epax_com:console(" ** ~p unable to fix, because ~p~n", [App, Reason]),
+                    {Apps, RestPkgs}
             end
     end.
 
-try_cloning_again(App_info) ->
-    Path = epax_os:get_abs_path(filename:join("packages", atom_to_list(App_info#application.name))),
+try_cloning_again(AppInfo) ->
+    Path = epax_os:get_abs_path(filename:join("packages", atom_to_list(AppInfo#application.name))),
     case (catch epax_os:rmdir(Path)) of
         ok ->
-            epax_repo:clone_app(App_info#application.repo_link,
-                                [{repo_type, App_info#application.repo_type}]);
-        E ->
-            {error, E}
+            epax_repo:clone_app(AppInfo#application.repo_link, [{repo_type, AppInfo#application.repo_type}]);
+        Reason ->
+            {error, Reason}
     end.

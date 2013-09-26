@@ -17,6 +17,8 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
+%%%
+
 -module(epax_app_tests).
 -include_lib("eunit/include/eunit.hrl").
 
@@ -29,15 +31,15 @@ init_test_() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
         meck:expect(epax_os, mkdir, fun("loc") -> {ok, done} end),
         meck:expect(epax_index, init, fun() -> ok end),
-        meck:expect(epax_com, print_success, fun("epax successfully initialized") -> ok end),
+        meck:expect(epax_com, success, fun("Index initialized successfully") -> ok end),
         ?assertEqual(ok, epax_app:init()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, [""])),
         ?assertEqual(1, meck:num_calls(epax_os, mkdir, ["loc"])),
         ?assertEqual(1, meck:num_calls(epax_index, init, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["epax successfully initialized"])),
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["Index initialized successfully"])),
         meck:validate([epax_com, epax_index, epax_os])
     end},
-    {"test failed initialization of epax when mkdir returns error",
+    {"test for initialization of epax when mkdir returns error",
     fun() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
         meck:expect(epax_os, mkdir, fun("loc") -> throw("error") end),
@@ -56,38 +58,38 @@ add_app_test_() ->
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, false} end),
         meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link", []) -> {ok, appname} end),
-        meck:expect(epax_com, print_success, fun("added appname to index") -> ok end),
+        meck:expect(epax_com, success, fun("Added ~s to index", [appname]) -> ok end),
         ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
         ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link", []])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["added appname to index"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["Added ~s to index", [appname]]))
     end},
     {"test add_app while error",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, false} end),
         meck:expect(epax_index, checkout_repo_and_add_to_index, fun("link", []) -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to add to index") -> ok end),
+        meck:expect(epax_com, error, fun("error", "Unable to add to index") -> ok end),
         ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
         ?assertEqual(1, meck:num_calls(epax_index, checkout_repo_and_add_to_index, ["link", []])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to add to index"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "Unable to add to index"]))
     end},
     {"test add_app when app already exists",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {ok, appname} end),
-        meck:expect(epax_com, print_error, fun(already_added, "appname is already added") -> ok end),
+        meck:expect(epax_com, error, fun(already_added, "~s is already added", [appname]) -> ok end),
         ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, [already_added, "appname is already added"])),
+        ?assertEqual(1, meck:num_calls(epax_com, error, [already_added, "~s is already added", [appname]])),
         ?assertNot(meck:called(epax_index, checkout_repo_and_add_to_index, ["link"]))
     end},
     {"test add_app when app_exist returns error",
     fun() ->
         meck:expect(epax_index, app_exists, fun("link") -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to add to index") -> ok end),
+        meck:expect(epax_com, error, fun("error","Unable to add to index") -> ok end),
         ?assertEqual(ok, epax_app:add_app("link", [])),
         ?assertEqual(1, meck:num_calls(epax_index, app_exists, ["link"])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to add to index"])),
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error","Unable to add to index"])),
         ?assertNot(meck:called(epax_index, checkout_repo_and_add_to_index, ["link"]))
     end}]}.
 
@@ -98,18 +100,18 @@ remove_app_test_() ->
     [{"test remove_app",
     fun() ->
         meck:expect(epax_index, remove_from_index, fun(appname) -> ok end),
-        meck:expect(epax_com, print_success, fun("appname is removed successfully") -> ok end),
+        meck:expect(epax_com, success, fun("~s is removed successfully",[appname]) -> ok end),
         ?assertEqual(ok, epax_app:remove_app(appname)),
         ?assertEqual(1, meck:num_calls(epax_index, remove_from_index, [appname])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["appname is removed successfully"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["~s is removed successfully",[appname]]))
     end},
     {"test remove_app while error",
     fun() ->
         meck:expect(epax_index, remove_from_index, fun(appname) -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "appname cannot be removed from index") -> ok end),
+        meck:expect(epax_com, error, fun("error", "~s cannot be removed from index", [appname]) -> ok end),
         ?assertEqual(ok, epax_app:remove_app(appname)),
         ?assertEqual(1, meck:num_calls(epax_index, remove_from_index, [appname])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "appname cannot be removed from index"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "~s cannot be removed from index", [appname]]))
     end}]}.
 
 list_apps_test_() ->
@@ -119,26 +121,28 @@ list_apps_test_() ->
     [{"test list_apps when no application in the list",
     fun() ->
         meck:expect(epax_index, get_applist, fun() -> {ok, []} end),
-        meck:expect(epax_com, print_success, fun("no app is added yet") -> ok end),
+        meck:expect(epax_com, success, fun("No app is added yet") -> ok end),
         ?assertEqual(ok, epax_app:list_apps()),
         ?assertEqual(1, meck:num_calls(epax_index, get_applist, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["no app is added yet"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["No app is added yet"]))
     end},
     {"test list_apps",
     fun() ->
         meck:expect(epax_index, get_applist, fun() -> {ok, [a, b, c]} end),
-        meck:expect(epax_com, print_success, fun("=== Erlang Apps ===\n  - a\n  - b\n  - c\n===================") -> ok end),
+        meck:expect(epax_com, success, fun("=== Erlang Apps ===~s~n===================",
+                                           [["\n",32,32,45,32,[97],"\n",32,32,45,32,"b","\n",32,32,45,32,"c"]]) -> ok end),
         ?assertEqual(ok, epax_app:list_apps()),
         ?assertEqual(1, meck:num_calls(epax_index, get_applist, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["=== Erlang Apps ===\n  - a\n  - b\n  - c\n==================="]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["=== Erlang Apps ===~s~n===================",
+                                                           [["\n",32,32,45,32,[97],"\n",32,32,45,32,"b","\n",32,32,45,32,"c"]]]))
     end},
     {"test list_apps when no application in the list",
     fun() ->
         meck:expect(epax_index, get_applist, fun() -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "cannot retrieve the application list") -> ok end),
+        meck:expect(epax_com, error, fun("error", "Cannot retrieve the application list") -> ok end),
         ?assertEqual(ok, epax_app:list_apps()),
         ?assertEqual(1, meck:num_calls(epax_index, get_applist, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "cannot retrieve the application list"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "Cannot retrieve the application list"]))
     end}]}.
 
 update_test_() ->
@@ -148,18 +152,18 @@ update_test_() ->
     [{"test for update index",
     fun() ->
         meck:expect(epax_index, update_index, fun() -> ok end),
-        meck:expect(epax_com, print_success, fun("index updated successfully") -> ok end),
+        meck:expect(epax_com, success, fun("Index updated successfully") -> ok end),
         ?assertEqual(ok, epax_app:update()),
         ?assertEqual(1, meck:num_calls(epax_index, update_index, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["index updated successfully"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["Index updated successfully"]))
     end},
     {"test for update index while failed",
     fun() ->
         meck:expect(epax_index, update_index, fun() -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to update index") -> ok end),
+        meck:expect(epax_com, error, fun("error", "Unable to update index") -> ok end),
         ?assertEqual(ok, epax_app:update()),
         ?assertEqual(1, meck:num_calls(epax_index, update_index, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to update index"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "Unable to update index"]))
     end}]}.
 
 check_test_() ->
@@ -169,18 +173,18 @@ check_test_() ->
     [{"test for check index",
     fun() ->
         meck:expect(epax_index, check_index, fun() -> ok end),
-        meck:expect(epax_com, print_success, fun("fixed broken packages") -> ok end),
+        meck:expect(epax_com, success, fun("Fixed broken packages") -> ok end),
         ?assertEqual(ok, epax_app:check()),
         ?assertEqual(1, meck:num_calls(epax_index, check_index, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["fixed broken packages"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["Fixed broken packages"]))
     end},
     {"test for check index while failed",
     fun() ->
         meck:expect(epax_index, check_index, fun() -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to fix broken packages, reinitialized the index") -> ok end),
+        meck:expect(epax_com, error, fun("error", "Unable to fix broken packages, reinitialized the index") -> ok end),
         ?assertEqual(ok, epax_app:check()),
         ?assertEqual(1, meck:num_calls(epax_index, check_index, [])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error", "unable to fix broken packages, reinitialized the index"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "Unable to fix broken packages, reinitialized the index"]))
     end}]}.
 
 bundle_test_() ->
@@ -190,16 +194,16 @@ bundle_test_() ->
     [{"test for bundle application",
     fun() ->
         meck:expect(epax_dep, bundle, fun(appname) -> ok end),
-        meck:expect(epax_com, print_success, fun("appname bundled successfully") -> ok end),
+        meck:expect(epax_com, success, fun("~s bundled successfully", [appname]) -> ok end),
         ?assertEqual(ok, epax_app:bundle(appname)),
         ?assertEqual(1, meck:num_calls(epax_dep, bundle, [appname])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_success, ["appname bundled successfully"]))
+        ?assertEqual(1, meck:num_calls(epax_com, success, ["~s bundled successfully", [appname]]))
     end},
     {"test for bundle application while failed",
     fun() ->
         meck:expect(epax_dep, bundle, fun(appname) -> {error, "error"} end),
-        meck:expect(epax_com, print_error, fun("error", "unable to bundle appname") -> ok end),
+        meck:expect(epax_com, error, fun("error", "Unable to bundle ~s", [appname]) -> ok end),
         ?assertEqual(ok, epax_app:bundle(appname)),
         ?assertEqual(1, meck:num_calls(epax_dep, bundle, [appname])),
-        ?assertEqual(1, meck:num_calls(epax_com, print_error, ["error",  "unable to bundle appname"]))
+        ?assertEqual(1, meck:num_calls(epax_com, error, ["error", "Unable to bundle ~s", [appname]]))
     end}]}.

@@ -17,9 +17,10 @@
 %%% --------------------------------------------------------------------------
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
-%%% @doc main epax os module, runs os specific operations
+%%% @doc handles os specific operations
+%%%
+
 -module(epax_os).
--include("epax.hrl").
 -export([get_abs_path/1,
          mkdir/1,
          copy_folder/2,
@@ -35,8 +36,8 @@
 
 %% get_abs_path/1
 %% ====================================================================
-%% @doc returns absolute path to the given location which is relative to
-%% .epax folder
+%% @doc returns absolute path to the given location which is relative
+%% to ~/.epax folder
 -spec get_abs_path(Location) -> Result | no_return() when
     Location :: string(),
     Result   :: string().
@@ -44,35 +45,38 @@
 get_abs_path(Location) ->
     case init:get_argument(home) of
         {ok, [[Home]]} ->
-            case string:str(Location, Home) of
-                0 ->
-                    filename:join([Home, ".epax", Location]);
+            case filename:pathtype(Location) of
+                absolute ->
+                    Location;
                 _ ->
-                    Location
+                    filename:join([Home, ".epax", Location])
             end;
         error ->
-            throw("cannot find the path to home folder")
+            epax_com:abort(home_folder_unavailable, "Cannot find the path to home folder")
     end.
 
 %% mkdir/1
 %% ====================================================================
-%% @doc make the directory if it does not exist already. Also makes parent
-%% directories as needed.
--spec mkdir(Path) -> ok | no_return() when
-    Path   :: string().
+%% @doc create the directory if it does not exist already. Also makes
+%% parent directories as needed.
+-spec mkdir(Path) -> ok | {error, Reason} when
+    Path   :: string(),
+    Reason :: term().
 %% ====================================================================
 mkdir(Path) ->
-    case os:type() of
-        {unix, _} ->
-            Cmd = lists:concat(["mkdir -p ", Path]);
-        {win32, _} ->
-            Cmd = lists:concat(["mkdir ", Path])
-    end,
-    case cmd(Cmd) of
-        {ok, _} ->
-            ok;
-        {error, Reason} ->
-            ?ABORT(Reason, "cannot create directory ~s", [Path])
+    filelib:ensure_dir(Path),
+    case filelib:is_dir(Path) of
+        false ->
+            case file:make_dir(Path) of
+                ok ->
+                    ok;
+                {error, eexist} ->
+                    ok;
+                {error, Reason} ->
+                    epax_com:abort(Reason, "Cannot create directory ~s", [Path])
+            end;
+        true ->
+            ok
     end.
 
 %% copy_folder/2
@@ -80,83 +84,77 @@ mkdir(Path) ->
 %% @doc copies one folder to another, creates the intermediate
 %% directories if required
 -spec copy_folder(From, To) -> ok when
-    From   :: string(),
-    To     :: string().
+    From :: string(),
+    To   :: string().
 %% ====================================================================
 copy_folder(From, To) ->
     mkdir(To),
     case os:type() of
         {unix, _} ->
-            Cmd = lists:concat(["cp -ir ", From, " ", To]);
+            Cmd = epax_com:format(["cp -ir ", From, " ", To]);
         {win32, _} ->
-            Cmd = lists:concat(["xcopy ", From, " ", To, " /s/e"])
+            Cmd = epax_com:format(["xcopy ", From, " ", To, " /s/e"])
     end,
     case cmd(Cmd) of
         {ok, _} ->
             ok;
         {error, Reason} ->
-            ?ABORT(Reason, "cannot copy ~s to ~s", [From, To])
+            epax_com:abort(Reason, "Cannot copy ~s to ~s", [From, To])
     end.
 
 %% mv_folder/2
 %% ====================================================================
 %% @doc moves content of one folder to another (renames the folder)
 -spec mv_folder(From, To) -> ok when
-    From   :: string(),
-    To     :: string().
+    From :: string(),
+    To   :: string().
 %% ====================================================================
 mv_folder(From, To) ->
     case os:type() of
         {unix, _} ->
-            Cmd = lists:concat(["mv ", From, " ", To]);
+            Cmd = epax_com:format(["mv ", From, " ", To]);
         {win32, _} ->
-            Cmd = lists:concat(["move ", From, " ", To])
+            Cmd = epax_com:format(["move ", From, " ", To])
     end,
     case cmd(Cmd) of
         {ok, _} ->
             ok;
         {error, Reason} ->
-            ?ABORT(Reason, "cannot move ~s to ~s", [From, To])
+            epax_com:abort(Reason, "Cannot move ~s to ~s", [From, To])
     end.
 
 %% touch/1
 %% ====================================================================
 %% @doc creates an empty file
 -spec touch(Path) -> ok when
-    Path   :: string().
+    Path :: string().
 %% ====================================================================
 touch(Path) ->
-    case os:type() of
-        {unix, _} ->
-            Cmd = lists:concat(["touch ", Path]);
-        {win32, _} ->
-            Cmd = lists:concat(["echo $null > ", Path])
-    end,
-    case cmd(Cmd) of
-        {ok, _} ->
+    case file:write_file(Path, []) of
+        ok ->
             ok;
         {error, Reason} ->
-            ?ABORT(Reason, "cannot touch ~s", [Path])
+            epax_com:abort(Reason, "Cannot touch ~s", [Path])
     end.
 
 %% rmdir/1
 %% ====================================================================
 %% @doc deletes the given directory
 -spec rmdir(Path) -> ok when
-    Path   :: string().
+    Path :: string().
 %% ====================================================================
 rmdir(Path) ->
     case os:type() of
         {unix, _} ->
-            Cmd = lists:concat(["rm -rf ", Path]);
+            Cmd = epax_com:format(["rm -rf ", Path]);
         {win32, _} ->
-            Cmd = lists:concat(["rmdir /s/q ", Path])
+            Cmd = epax_com:format(["rmdir /s/q ", Path])
     end,
     case cmd(Cmd) of
         {ok, _} ->
             ok;
         {error, Reason} ->
-            ?ABORT(Reason, "cannot delete directory ~s", [Path])
+            epax_com:abort(Reason, "Cannot delete directory ~s", [Path])
     end.
 
 %% run_in_dir/2
@@ -169,7 +167,7 @@ rmdir(Path) ->
     Result :: term().
 %% ====================================================================
 run_in_dir(Path, Cmd) ->
-    NewCmd = lists:concat(["cd ", Path, " && ", Cmd]),
+    NewCmd = epax_com:format(["cd ", Path, " && ", Cmd]),
     os:cmd(NewCmd).
 
 

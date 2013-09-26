@@ -18,6 +18,8 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc handles dependency solving step for epax
+%%%
+
 -module(epax_dep).
 -include("epax.hrl").
 -export([bundle/1]).
@@ -29,8 +31,8 @@
 
 %% bundle/1
 %% ====================================================================
-%% @doc bundles the app, finds all the dependencies and copies them into the
-%% app folder
+%% @doc bundles the app, finds all the dependencies and copies them
+%% into the app folder
 -spec bundle(Appname) -> Result when
     Appname :: atom(),
     Result  :: ok
@@ -58,19 +60,19 @@ find_all_deps_recursively_for(Appname) ->
             E
     end.
 
-find_all_deps_recursively_helper([], Already_added) ->
-    {ok, Already_added};
-find_all_deps_recursively_helper([H|T], Already_added) ->
-    case lists:member(H, Already_added)  of
+find_all_deps_recursively_helper([], AlreadyAdded) ->
+    {ok, AlreadyAdded};
+find_all_deps_recursively_helper([H|T], AlreadyAdded) ->
+    case lists:member(H, AlreadyAdded)  of
         false ->
             case find_all_deps_for(H) of
                 {ok, Deps} ->
-                    find_all_deps_recursively_helper(lists:append(T, Deps), [H|Already_added]);
+                    find_all_deps_recursively_helper(lists:append(T, Deps), [H|AlreadyAdded]);
                 {error, _} = E ->
                     E
             end;
         true ->
-            find_all_deps_recursively_helper(T, Already_added)
+            find_all_deps_recursively_helper(T, AlreadyAdded)
     end.
 
 find_all_deps_for(Appname) ->
@@ -78,50 +80,50 @@ find_all_deps_for(Appname) ->
         {ok, Appname} ->
             find_all_deps_for_helper(Appname);
         {ok, false} ->
-            {error, ?FMT("~s is not found", [Appname])};
+            {error, epax_com:format("~s does not exist", [Appname])};
         {error, _} = E ->
             E
     end.
 
 find_all_deps_for_helper(Appname) ->
     case epax_com:get_appfile_content(Appname) of
-        {ok, [App_content]} ->
-            App_details = element(3, App_content),
-            Include_app = case lists:keyfind(included_applications, 1, App_details) of
-                false ->
-                    [];
-                {included_applications, List} ->
-                    List
-            end,
-            App = case lists:keyfind(applications, 1, App_details) of
-                false ->
-                    [];
-                {applications, L} ->
-                    L
-            end,
-            All_apps = lists:append(Include_app, App),
-            {ok, delete_standard_apps(All_apps)};
+        {ok, [AppContent]} ->
+            AppDetails = element(3, AppContent),
+            IncludeApps = case lists:keyfind(included_applications, 1, AppDetails) of
+                    false ->
+                        [];
+                    {included_applications, List} ->
+                        List
+                end,
+            App = case lists:keyfind(applications, 1, AppDetails) of
+                    false ->
+                        [];
+                    {applications, L} ->
+                        L
+                end,
+            AllApps = lists:append(IncludeApps, App),
+            {ok, delete_standard_apps(AllApps)};
         {error, _} = E ->
             E
     end.
 
 delete_standard_apps(Deps) ->
     lists:filter(fun(X) ->
-        case lists:member(X, ?STAND_APPS) of
-            true -> false;
-            false -> true
-        end
-    end,
-    Deps).
+            case lists:member(X, ?STAND_APPS) of
+                true -> false;
+                false -> true
+            end
+        end,
+        Deps).
 
 copy_all_deps(Deps, Appname) ->
-    To_deps_folder = filename:join([epax_os:get_abs_path("packages"), Appname, "deps"]),
+    ToDepsFolder = filename:join([epax_os:get_abs_path("packages"), atom_to_list(Appname), "deps"]),
     lists:foreach(fun(Dep) ->
-        copy_dep(Dep, To_deps_folder)
-    end,
-    Deps).
+            copy_dep(Dep, ToDepsFolder)
+        end,
+        Deps).
 
-copy_dep(Dep, To_deps_folder) ->
+copy_dep(Dep, ToDepsFolder) ->
     From = filename:join(epax_os:get_abs_path("packages"), Dep),
-    ?CONSOLE("copying ~p~n", [Dep]),
-    epax_os:copy_folder(From, To_deps_folder).
+    epax_com:console("Copying ~p~n", [Dep]),
+    epax_os:copy_folder(From, ToDepsFolder).

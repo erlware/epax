@@ -18,8 +18,9 @@
 %%% @author Aman Mangal <mangalaman93@gmail.com>
 %%% @copyright (C) 2012 Erlware, LLC.
 %%% @doc main epax application module
+%%%
+
 -module(epax_app).
--include("epax.hrl").
 -export([init/0,
          add_app/2,
          remove_app/1,
@@ -39,14 +40,15 @@
 -spec init() -> ok.
 %% ====================================================================
 init() ->
-    Epax_loc = epax_os:get_abs_path(""),
-    epax_os:mkdir(Epax_loc),
+    EpaxLoc = epax_os:get_abs_path(""),
+    epax_os:mkdir(EpaxLoc),
     epax_index:init(),
-    ?SUCCESS("epax successfully initialized").
+    epax_com:success("Index initialized successfully").
 
 %% add_app/2
 %% ====================================================================
-%% @doc adds OTP application stored at Link (only supports git)
+%% @doc adds OTP application (package) stored at Link (only supports
+%% git, bzr and svn repositories)
 -spec add_app(Link, Options) -> ok when
     Link    :: string(),
     Options :: [term()].
@@ -56,14 +58,14 @@ add_app(Link, Options) ->
         {ok, false} ->
             case epax_index:checkout_repo_and_add_to_index(Link, Options) of
                 {ok, Appname} ->
-                    ?SUCCESS("added ~s to index", [Appname]);
+                    epax_com:success("Added ~s to index", [Appname]);
                 {error, Reason} ->
-                    ?ERROR(Reason, "unable to add to index")
+                    epax_com:error(Reason, "Unable to add to index")
             end;
         {ok, Appname} ->
-            ?ERROR(already_added, "~s is already added", [Appname]);
+            epax_com:error(already_added, "~s is already added", [Appname]);
         {error, Reason} ->
-             ?ERROR(Reason, "unable to add to index")
+             epax_com:error(Reason, "Unable to add to index")
     end.
 
 %% remove_app/1
@@ -75,9 +77,9 @@ add_app(Link, Options) ->
 remove_app(Appname) ->
     case epax_index:remove_from_index(Appname) of
         ok ->
-            ?SUCCESS("~s is removed successfully", [Appname]);
+            epax_com:success("~s is removed successfully", [Appname]);
         {error, Reason} ->
-            ?ERROR(Reason, "~s cannot be removed from index", [Appname])
+            epax_com:error(Reason, "~s cannot be removed from index", [Appname])
     end.
 
 %% list_apps/0
@@ -88,15 +90,16 @@ remove_app(Appname) ->
 list_apps() ->
     case epax_index:get_applist() of
         {ok, []} ->
-            ?SUCCESS("no app is added yet");
-        {ok, All_apps} ->
-            ?SUCCESS("=== Erlang Apps ===~s~n===================",
+            epax_com:success("No app is added yet");
+        {ok, AllApps} ->
+            epax_com:success("=== Erlang Apps ===~s~n===================",
                 [lists:foldl(fun(Elem, Acc) ->
-                    string:concat(Acc, io_lib:format("~n  - ~s", [Elem])) end,
+                        string:concat(Acc, io_lib:format("~n  - ~s", [Elem]))
+                    end,
                     "",
-                    All_apps)]);
+                    AllApps)]);
         {error, Reason} ->
-            ?ERROR(Reason, "cannot retrieve the application list")
+            epax_com:error(Reason, "Cannot retrieve the application list")
     end.
 
 %% update/0
@@ -107,23 +110,23 @@ list_apps() ->
 update() ->
     case epax_index:update_index() of
         ok ->
-            ?SUCCESS("index updated successfully");
+            epax_com:success("Index updated successfully");
         {error, Reason} ->
-            ?ERROR(Reason, "unable to update index")
+            epax_com:error(Reason, "Unable to update index")
     end.
 
 %% check/0
 %% ====================================================================
 %% @doc verifies that there are no broken packages (index description
-%% matches with the downloaded package)
+%% matches with the downloaded package), updates the index simultaneously
 -spec check() -> ok.
 %% ====================================================================
 check() ->
     case epax_index:check_index() of
-        {error, Reason} ->
-            ?ERROR(Reason, "unable to fix broken packages, reinitialized the index");
         ok ->
-            ?SUCCESS("fixed broken packages")
+            epax_com:success("Fixed broken packages");
+        {error, Reason} ->
+            epax_com:error(Reason, "Unable to fix broken packages, reinitialized the index")
     end.
 
 %% bundle/0
@@ -136,7 +139,7 @@ check() ->
 bundle(Appname) ->
     case epax_dep:bundle(Appname) of
         ok ->
-            ?SUCCESS("~s bundled successfully", [Appname]);
+            epax_com:success("~s bundled successfully", [Appname]);
         {error, Reason} ->
-            ?ERROR(Reason, "unable to bundle ~s", [Appname])
+            epax_com:error(Reason, "Unable to bundle ~s", [Appname])
     end.
