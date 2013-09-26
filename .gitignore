@@ -1,0 +1,36 @@
+# Compiled source #
+###################
+*.beam
+*.o
+epax
+ebin/
+
+# Logs #
+######################
+*.log
+*.dump
+erl_crash.dump
+logs/*
+log/*
+
+# OS generated files #
+######################
+.DS_Store
+._*
+*~
+
+# eclipse project files #
+#########################
+.project
+.settings/
+
+# lib files #
+#########################
+deps/*
+
+# doc and priv files #
+#########################
+doc/*
+priv/*
+.*
+TODO
